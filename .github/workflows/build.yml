@@ -1,0 +1,26 @@
+name: Build native Windows app
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test arithmetic and persistence
+        run: dotnet run --project tests/SuperCalc.Tests -c Release
+      - name: Publish self-contained WinUI 3 app
+        run: dotnet publish src/SuperCalc.App/SuperCalc.App.csproj -c Release -p:Platform=x64 -o artifacts/SuperCalc-win-x64
+      - name: Verify native XAML resources are shipped
+        shell: pwsh
+        run: |
+          if (!(Test-Path artifacts/SuperCalc-win-x64/SuperCalc.App.pri)) { throw 'Missing XAML resource index' }
+          if (!(Test-Path artifacts/SuperCalc-win-x64/Assets/SuperCalc.ico)) { throw 'Missing app icon' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SuperCalc-win-x64
+          path: artifacts/SuperCalc-win-x64/

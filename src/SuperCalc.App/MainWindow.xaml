@@ -1,0 +1,123 @@
+<Window x:Class="SuperCalc.App.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="SuperCalc · 为了计算，先体验">
+ <Grid x:Name="Root" RequestedTheme="Light" Background="#F3F5FB" KeyDown="Root_KeyDown">
+  <Grid.RowDefinitions><RowDefinition Height="44"/><RowDefinition Height="*"/><RowDefinition Height="32"/></Grid.RowDefinitions>
+  <Border Grid.Row="0" Background="#EDF0F8" BorderBrush="#DFE3EF" BorderThickness="0,0,0,1">
+   <StackPanel x:Name="TitleBar" Orientation="Horizontal" Spacing="10" Margin="18,0,150,0" VerticalAlignment="Center">
+    <Border Background="#5358CE" CornerRadius="5" Width="22" Height="22"><TextBlock Text="=" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+    <TextBlock Text="SuperCalc" FontWeight="SemiBold" VerticalAlignment="Center"/>
+    <TextBlock Text="/" Foreground="#B1B6C9" VerticalAlignment="Center"/>
+    <TextBlock Text="Experience Edition" Style="{StaticResource SmallLabel}" VerticalAlignment="Center"/>
+   </StackPanel>
+  </Border>
+  <Grid Grid.Row="1">
+   <Grid.ColumnDefinitions><ColumnDefinition x:Name="NavColumn" Width="224"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border x:Name="Sidebar" Background="#EDF0F8" BorderBrush="#DFE3EF" BorderThickness="0,0,1,0" Padding="14,26,14,18">
+    <Grid>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <StackPanel Spacing="6" Margin="12,0,0,24"><TextBlock Text="算一点，体验很多。" FontWeight="SemiBold" FontSize="17"/><TextBlock Text="YOUR PRODUCTIVITY, REIMAGINED" FontSize="9" CharacterSpacing="70" Foreground="#858BA4"/></StackPanel>
+     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel Spacing="5">
+      <TextBlock Text="工作空间" Style="{StaticResource SmallLabel}" Margin="16,0,0,8"/>
+      <Button x:Name="CalcNav" Style="{StaticResource NavButton}" Click="Navigate_Click" Tag="calc" Background="#DEDEF7"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE8EF;" FontSize="17"/><TextBlock Text="计算器" FontWeight="SemiBold"/><TextBlock Text="免费" Foreground="#777EA3" FontSize="11"/></StackPanel></Button>
+      <Button x:Name="HistoryNav" Style="{StaticResource NavButton}" Click="Navigate_Click" Tag="history"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE81C;" FontSize="17"/><TextBlock Text="计算时间线"/></StackPanel></Button>
+      <Button Style="{StaticResource NavButton}" Click="Cloud_Click"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE753;" FontSize="17"/><TextBlock Text="OneNumber 云盘"/></StackPanel></Button>
+      <Button Style="{StaticResource NavButton}" Click="Premium_Click"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE734;" FontSize="17"/><TextBlock Text="SuperCalc 365"/></StackPanel></Button>
+      <Border Height="1" Background="#DDE1ED" Margin="12,18"/>
+      <TextBlock Text="更多可能" Style="{StaticResource SmallLabel}" Margin="16,0,0,8"/>
+      <Button x:Name="SettingsNav" Style="{StaticResource NavButton}" Click="Navigate_Click" Tag="settings"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE713;" FontSize="17"/><TextBlock Text="体验设置"/></StackPanel></Button>
+      <Button x:Name="MuseumNav" Style="{StaticResource NavButton}" Click="Navigate_Click" Tag="museum"><StackPanel Orientation="Horizontal" Spacing="13"><FontIcon Glyph="&#xE946;" FontSize="17"/><TextBlock Text="设计博物馆"/></StackPanel></Button>
+     </StackPanel></ScrollViewer>
+     <StackPanel Grid.Row="2" Spacing="14">
+      <Border Background="#E2E6F5" CornerRadius="12" Padding="16"><StackPanel Spacing="9"><TextBlock Text="☁  您的数字，值得上云" FontWeight="SemiBold" FontSize="13"/><TextBlock Text="让每一个小数点，都有归属感。" TextWrapping="Wrap" Style="{StaticResource SmallLabel}"/><Button Content="完成账户设置  →" Click="Account_Click" HorizontalAlignment="Stretch" FontSize="12"/></StackPanel></Border>
+      <Button Click="Account_Click" Style="{StaticResource NavButton}"><StackPanel Orientation="Horizontal" Spacing="10"><PersonPicture Width="32" Height="32" Initials="本"/><StackPanel><TextBlock x:Name="AccountLabel" Text="本地体验者" FontSize="13"/><TextBlock Text="潜力尚未完全释放" FontSize="10" Foreground="#7C829B"/></StackPanel></StackPanel></Button>
+     </StackPanel>
+    </Grid>
+   </Border>
+   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="30,26,30,24" Spacing="20">
+     <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel Spacing="5"><StackPanel Orientation="Horizontal" Spacing="12"><Button x:Name="CompactNavigation" Visibility="Collapsed" Content="☰" Click="More_Click" AutomationProperties.Name="导航菜单" VerticalAlignment="Center"/><TextBlock x:Name="PageTitle" Text="计算器" FontSize="30" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}"/></StackPanel><TextBlock x:Name="PageSubtitle" Text="一个简单的答案，值得一整套生态。" Foreground="{StaticResource MutedBrush}" FontSize="13" TextWrapping="Wrap"/></StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+       <Border x:Name="PreviewBadge" Background="#E6E8FB" CornerRadius="5" Padding="9,5" VerticalAlignment="Center"><TextBlock Text="PREVIEW" Foreground="#6064B1" FontSize="10" CharacterSpacing="80"/></Border>
+       <ToggleSwitch x:Name="FocusToggle" Header="让我算数" OffContent="体验全开" OnContent="专注模式" Toggled="Focus_Toggled" AutomationProperties.Name="让我算数：专注模式"/>
+      </StackPanel>
+     </Grid>
+     <InfoBar x:Name="Notice" IsOpen="False" IsClosable="True" Severity="Informational" />
+     <Grid x:Name="CalculatorPage">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition x:Name="AssistantColumn" Width="296"/></Grid.ColumnDefinitions>
+      <StackPanel Spacing="16">
+       <Border x:Name="WelcomeBanner" CornerRadius="13" Padding="20,16" BorderBrush="#DADDF8" BorderThickness="1">
+        <Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#E5E7FF"/><GradientStop Color="#EEF2FF" Offset="0.6"/><GradientStop Color="#E2F0FD" Offset="1"/></LinearGradientBrush></Border.Background>
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel Spacing="5"><TextBlock Text="✦  欢迎使用更有可能性的计算器" FontWeight="SemiBold" Foreground="#414891"/><TextBlock Text="您只负责输入。剩下的，让体验接管。" Style="{StaticResource SmallLabel}"/></StackPanel><Button Grid.Column="1" Content="探索权益" Click="Premium_Click" VerticalAlignment="Center" FontSize="12"/></Grid>
+       </Border>
+       <Border Style="{StaticResource Card}" Padding="20,18,20,20">
+        <StackPanel Spacing="13">
+         <Grid><TextBlock Text="标准计算" FontWeight="SemiBold" FontSize="14"/><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right"><TextBlock x:Name="MemoryLabel" Text="M · 空" Style="{StaticResource SmallLabel}" VerticalAlignment="Center"/><Button Content="···" Padding="10,0" Click="More_Click" AutomationProperties.Name="显示更多计算选项"/></StackPanel></Grid>
+         <Border Background="#F7F8FC" CornerRadius="10" Padding="17,12">
+          <StackPanel Spacing="4">
+           <TextBox x:Name="ExpressionBox" PlaceholderText="输入算式，例如 (12 + 8) × 5" TextAlignment="Right" FontSize="17" BorderThickness="0" Background="Transparent" MaxLength="512" KeyDown="Expression_KeyDown" TextChanged="Expression_Changed" AutomationProperties.Name="算式输入"/>
+           <TextBlock x:Name="ResultText" Text="0" FontSize="48" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" AutomationProperties.LiveSetting="Polite"/>
+           <Grid><TextBlock x:Name="ResultCaption" Text="准备就绪。生产力即将发生。" FontSize="11" Foreground="#878DA6"/><TextBlock x:Name="LocalBadge" Text="● 本地运算" FontSize="10" Foreground="#568979" HorizontalAlignment="Right"/></Grid>
+          </StackPanel>
+         </Border>
+         <Grid ColumnSpacing="6"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <Button Content="MC" Click="Memory_Click" Tag="clear" HorizontalAlignment="Stretch" FontSize="12" ToolTipService.ToolTip="清除记忆"/><Button Grid.Column="1" Content="MR" Click="Memory_Click" Tag="recall" HorizontalAlignment="Stretch" FontSize="12" ToolTipService.ToolTip="读取记忆"/><Button Grid.Column="2" Content="M+" Click="Memory_Click" Tag="add" HorizontalAlignment="Stretch" FontSize="12" ToolTipService.ToolTip="累加结果"/><Button Grid.Column="3" Content="M−" Click="Memory_Click" Tag="subtract" HorizontalAlignment="Stretch" FontSize="12" ToolTipService.ToolTip="减去结果"/><Button Grid.Column="4" Content="复制" Click="Copy_Click" HorizontalAlignment="Stretch" FontSize="12"/>
+         </Grid>
+         <Grid x:Name="Keypad" ColumnSpacing="7" RowSpacing="7">
+          <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+          <Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+          <Button Content="%" Style="{StaticResource OperatorKey}" Click="Key_Click" Tag="%" ToolTipService.ToolTip="百分数：50% = 0.5"/><Button Grid.Column="1" Content="CE" Style="{StaticResource OperatorKey}" Click="ClearEntry_Click" ToolTipService.ToolTip="清除末尾数字"/><Button Grid.Column="2" Content="C" Style="{StaticResource OperatorKey}" Click="Clear_Click"/><Button Grid.Column="3" Content="⌫" Style="{StaticResource OperatorKey}" Click="Backspace_Click" AutomationProperties.Name="退格"/>
+          <Button Grid.Row="1" Content="1/x" Style="{StaticResource OperatorKey}" Click="Unary_Click" Tag="reciprocal"/><Button Grid.Row="1" Grid.Column="1" Content="x²" Style="{StaticResource OperatorKey}" Click="Unary_Click" Tag="square"/><Button Grid.Row="1" Grid.Column="2" Content="√x" Style="{StaticResource OperatorKey}" Click="Unary_Click" Tag="sqrt"/><Button Grid.Row="1" Grid.Column="3" Content="÷" Style="{StaticResource OperatorKey}" Click="Key_Click" Tag="÷"/>
+          <Button Grid.Row="2" Content="7" Style="{StaticResource Key}" Click="Key_Click" Tag="7"/><Button Grid.Row="2" Grid.Column="1" Content="8" Style="{StaticResource Key}" Click="Key_Click" Tag="8"/><Button Grid.Row="2" Grid.Column="2" Content="9" Style="{StaticResource Key}" Click="Key_Click" Tag="9"/><Button Grid.Row="2" Grid.Column="3" Content="×" Style="{StaticResource OperatorKey}" Click="Key_Click" Tag="×"/>
+          <Button Grid.Row="3" Content="4" Style="{StaticResource Key}" Click="Key_Click" Tag="4"/><Button Grid.Row="3" Grid.Column="1" Content="5" Style="{StaticResource Key}" Click="Key_Click" Tag="5"/><Button Grid.Row="3" Grid.Column="2" Content="6" Style="{StaticResource Key}" Click="Key_Click" Tag="6"/><Button Grid.Row="3" Grid.Column="3" Content="−" Style="{StaticResource OperatorKey}" Click="Key_Click" Tag="−"/>
+          <Button Grid.Row="4" Content="1" Style="{StaticResource Key}" Click="Key_Click" Tag="1"/><Button Grid.Row="4" Grid.Column="1" Content="2" Style="{StaticResource Key}" Click="Key_Click" Tag="2"/><Button Grid.Row="4" Grid.Column="2" Content="3" Style="{StaticResource Key}" Click="Key_Click" Tag="3"/><Button Grid.Row="4" Grid.Column="3" Content="+" Style="{StaticResource OperatorKey}" Click="Key_Click" Tag="+"/>
+          <Button Grid.Row="5" Content="+/−" Style="{StaticResource Key}" Click="Unary_Click" Tag="negate"/><Button Grid.Row="5" Grid.Column="1" Content="0" Style="{StaticResource Key}" Click="Key_Click" Tag="0"/><Button Grid.Row="5" Grid.Column="2" Content="." Style="{StaticResource Key}" Click="Key_Click" Tag="."/><Button x:Name="EqualsButton" Grid.Row="5" Grid.Column="3" Content="=" Style="{StaticResource Key}" Background="#5358CE" Foreground="White" Click="Equals_Click" AutomationProperties.Name="计算结果"/>
+         </Grid>
+         <Grid><TextBlock Text="Enter 求值 · Esc 清空 · 支持括号" Style="{StaticResource SmallLabel}"/><TextBlock x:Name="KeypadTip" Text="100% 圆角" HorizontalAlignment="Right" FontSize="11" Foreground="#9298AE"/></Grid>
+        </StackPanel>
+       </Border>
+       <Border x:Name="RecommendationCard" Style="{StaticResource Card}" Padding="18,14"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel Spacing="5"><TextBlock Text="为你推荐  ·  个性化灵感" Style="{StaticResource SmallLabel}"/><TextBlock x:Name="RecommendationText" Text="今天的幸运数字是 365。恰好也是我们的套餐名。" FontSize="12" TextWrapping="Wrap"/></StackPanel><Button Grid.Column="1" Content="试试看 ↗" Margin="12,0,0,0" Click="Recommendation_Click" FontSize="12"/></Grid></Border>
+      </StackPanel>
+      <StackPanel x:Name="AssistantPanel" Grid.Column="1" Spacing="16" Margin="20,0,0,0">
+       <Border Style="{StaticResource Card}" Padding="20">
+        <StackPanel Spacing="16">
+         <Grid><StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="✦" FontSize="23" Foreground="#7472D9"/><TextBlock Text="CalcPilot" FontWeight="SemiBold" FontSize="18" VerticalAlignment="Center"/></StackPanel><Border HorizontalAlignment="Right" Background="#F0E8FA" Padding="6,3" CornerRadius="4" VerticalAlignment="Center"><TextBlock Text="AI-ish" FontSize="10" Foreground="#8B65B1"/></Border></Grid>
+         <Border Height="106" CornerRadius="10"><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#F3E8FF"/><GradientStop Color="#DBE9FF" Offset="0.5"/><GradientStop Color="#E4F5F3" Offset="1"/></LinearGradientBrush></Border.Background><StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="5"><TextBlock Text="✧  ∞  ✧" FontSize="34" Foreground="#7871C8" HorizontalAlignment="Center"/><TextBlock Text="小题，大做。" Foreground="#6A7399" FontSize="12" HorizontalAlignment="Center"/></StackPanel></Border>
+         <TextBlock Text="不止是答案。是对话。" FontSize="15" FontWeight="SemiBold"/>
+         <TextBlock Text="把简单算式升级为灵感时刻。让 AI 帮你重新想象每一个等号。" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" LineHeight="20"/>
+         <Button Content="✦  帮我深度思考" Click="Pilot_Click" HorizontalAlignment="Stretch" Background="#ECEBFA" Foreground="#5554AE" FontSize="13"/>
+         <ComboBox x:Name="ToneBox" Header="答案语气" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="专业且毫无必要"/><ComboBoxItem Content="鼓舞人心"/><ComboBoxItem Content="企业级废话"/></ComboBox>
+         <TextBlock x:Name="PilotReply" Text="试试问我：为什么 2 + 2 值得一次数字化转型？" TextWrapping="Wrap" FontSize="12" Foreground="#8389A1" LineHeight="19"/>
+         <ProgressBar x:Name="ThinkingBar" IsIndeterminate="True" Visibility="Collapsed"/>
+         <TextBlock Text="本地剧本 · 0 次网络请求 · 非真实 AI" FontSize="10" Foreground="#989DB0"/>
+        </StackPanel>
+       </Border>
+       <Border Style="{StaticResource Card}" Padding="18"><StackPanel Spacing="11"><Grid><TextBlock Text="您的体验健康度" FontWeight="SemiBold" FontSize="13"/><TextBlock x:Name="HealthScore" Text="42 / 100" Foreground="#6366B6" HorizontalAlignment="Right" FontSize="12"/></Grid><ProgressBar x:Name="HealthProgress" Value="42" Foreground="#8484D4" Background="#EEEFFA"/><TextBlock x:Name="HealthText" Text="再多一点设置，就能少一点计算。" TextWrapping="Wrap" Style="{StaticResource SmallLabel}"/><Button Content="优化我的体验 →" Click="Optimize_Click" HorizontalAlignment="Left" FontSize="12" Background="Transparent" BorderThickness="0" Padding="0,4"/></StackPanel></Border>
+       <TextBlock Text="SUPER PRODUCTIVE. SUPER EXTRA.&#x0a;独立讽刺作品 / 非微软官方应用" Foreground="#989DB0" FontSize="10" LineHeight="18" Margin="6,0"/>
+      </StackPanel>
+     </Grid>
+     <StackPanel x:Name="HistoryPage" Visibility="Collapsed" Spacing="16">
+      <AutoSuggestBox x:Name="HistorySearch" PlaceholderText="搜索你的数字宇宙" QueryIcon="Find" TextChanged="Search_Changed"/>
+      <Border x:Name="SearchPromotion" Style="{StaticResource Card}"><StackPanel Spacing="7"><TextBlock Text="网页灵感 · 优先推荐" Foreground="#6568BE" FontWeight="SemiBold"/><TextBlock Text="你搜索的是历史，我们看见的是商机。试试 SuperCalc 365。" TextWrapping="Wrap"/><Button Content="了解本地模拟套餐" Click="Premium_Click"/></StackPanel></Border>
+      <Grid><TextBlock Text="最近 100 条 · 仅保存在此设备" Foreground="{StaticResource MutedBrush}"/><Button Content="清空历史记录" Click="ClearHistory_Click" HorizontalAlignment="Right"/></Grid>
+      <StackPanel x:Name="HistoryItems" Spacing="10"/>
+     </StackPanel>
+     <StackPanel x:Name="SettingsPage" Visibility="Collapsed" Spacing="14">
+      <Border Style="{StaticResource Card}"><StackPanel Spacing="14"><TextBlock Text="体验 > 系统 > 计算 > 更多体验" Foreground="{StaticResource MutedBrush}" FontSize="12"/><TextBlock Text="让简单更丰富" FontSize="20" FontWeight="SemiBold"/><ToggleSwitch x:Name="DramaToggle" Header="全生命周期仪式感" OnContent="求值、复制、错误和更新都有仪式" OffContent="减少仪式" Toggled="Settings_Toggled"/><ToggleSwitch x:Name="AnimationToggle" Header="为了流畅而等待" OnContent="展示短暂的体验准备动画" OffContent="立即返回结果" Toggled="Settings_Toggled"/><ToggleSwitch x:Name="RecommendationsToggle" Header="显示推荐，而不是广告" OnContent="为数字发现商业可能性" OffContent="隐藏推荐卡片" Toggled="Settings_Toggled"/><ToggleSwitch x:Name="ExitToggle" Header="离开时，我们很在意" OnContent="退出挽留与满意度评价" OffContent="直接关闭应用" Toggled="Settings_Toggled"/></StackPanel></Border>
+      <Border Style="{StaticResource Card}"><StackPanel Spacing="12"><TextBlock Text="相关设置" FontWeight="SemiBold"/><Button Content="更多数字设置  ›  高级设置  ›  传统控制面板" Click="Legacy_Click"/><Button Content="检查体验更新" Click="Update_Click"/><Button Content="重新体验首次启动向导" Click="Onboarding_Click"/><TextBlock Text="设置、记忆和最多 100 条历史保存在本机 AppData/Local/SuperCalc。" TextWrapping="Wrap" Style="{StaticResource SmallLabel}"/></StackPanel></Border>
+     </StackPanel>
+     <StackPanel x:Name="MuseumPage" Visibility="Collapsed" Spacing="14">
+      <Border Style="{StaticResource Card}"><StackPanel Spacing="10"><TextBlock Text="好设计，让你忘记界面。" FontSize="23" FontWeight="SemiBold"/><TextBlock Text="本应用，努力让你忘记自己要算什么。" FontSize="16" Foreground="#666CB5"/><TextBlock Text="这是一座可以使用的设计讽刺博物馆。以下机制取材于公开设计说明和用户反馈，再加以夸张。扁平与圆角不是问题，阻碍任务的流程才是。" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/></StackPanel></Border>
+      <StackPanel x:Name="MuseumItems" Spacing="10"/>
+     </StackPanel>
+    </StackPanel>
+   </ScrollViewer>
+  </Grid>
+  <Border Grid.Row="2" Background="#EAEDF6" BorderBrush="#DFE3EF" BorderThickness="0,1,0,0" Padding="18,0">
+   <Grid><TextBlock x:Name="StatusText" Text="● 所有系统都在为一个等号努力" VerticalAlignment="Center" FontSize="11" Foreground="#747C96"/><TextBlock x:Name="SessionStats" Text="本地运行  /  体验版 1.0" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="11" Foreground="#858CA4"/></Grid>
+  </Border>
+ </Grid>
+</Window>
