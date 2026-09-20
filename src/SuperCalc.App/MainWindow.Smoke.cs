@@ -3,6 +3,10 @@ using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Hosting;
+using Windows.Foundation;
+using Windows.Graphics;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 
@@ -25,6 +29,9 @@ public sealed partial class MainWindow
             state.Onboarded = true;
             await Task.Delay(500);
             Check("Native XAML window loaded", Root.ActualWidth > 0 && Keypad.ActualHeight > 0);
+            Check("Native navigation uses compact pane", Navigation.PaneDisplayMode == NavigationViewPaneDisplayMode.LeftCompact && !Navigation.IsPaneOpen);
+            Check("Mica backdrop is installed", SystemBackdrop is MicaBackdrop);
+            Check("Keypad is inside viewport without page scrolling", EqualsButton.TransformToVisual(Root).TransformPoint(new Point(0, EqualsButton.ActualHeight)).Y <= Root.ActualHeight - 24);
             ExpressionBox.Text = "(128 + 256) × 2";
             await Calculate();
             Check("Equals handler displays correct result", ResultText.Text == "768");
@@ -58,7 +65,7 @@ public sealed partial class MainWindow
             await Capture(Path.Combine(outputDirectory, "03-settings.png"));
             FocusToggle.IsOn = true;
             Check("Focus mode returns to calculator", CalculatorPage.Visibility == Visibility.Visible);
-            Check("Focus mode removes distractions", Sidebar.Visibility == Visibility.Collapsed && AssistantPanel.Visibility == Visibility.Collapsed && RecommendationCard.Visibility == Visibility.Collapsed);
+            Check("Focus mode removes distractions", !Navigation.IsPaneVisible && AssistantPanel.Visibility == Visibility.Collapsed && RecommendationCard.Visibility == Visibility.Collapsed);
             Check("Focus mode disables ceremony", !Drama);
             await Capture(Path.Combine(outputDirectory, "04-focus.png"));
             FocusToggle.IsOn = false;
@@ -67,7 +74,7 @@ public sealed partial class MainWindow
             Check("Recommendation setting actually hides cards", RecommendationCard.Visibility == Visibility.Collapsed && SearchPromotion.Visibility == Visibility.Collapsed);
             RecommendationsToggle.IsOn = true;
             Navigate("museum");
-            Check("Design museum includes all lifecycle stages", MuseumItems.Children.Count == 10);
+            Check("What's new contains feature guidance", MuseumItems.Children.Count == 10);
             await Capture(Path.Combine(outputDirectory, "05-museum.png"));
             Navigate("calc");
             ExpressionBox.Text = "(128 + 256) × 2"; await Calculate();
@@ -75,7 +82,7 @@ public sealed partial class MainWindow
             var probe = new ContentDialog
             {
                 XamlRoot = Root.XamlRoot, Title = "让我们完成计算器的设置",
-                Content = new TextBlock { Text = "1 / 3  欢迎来到数字生活的新篇章\n\n在您计算 2 + 2 之前，我们希望先了解您的梦想。\n\n所有账号、云、订阅与 AI 只在本地演出。", TextWrapping = TextWrapping.Wrap, MaxWidth = 440 },
+                Content = new TextBlock { Text = "1 / 3  充分利用 SuperCalc\n\n只需再完成几个步骤，即可让你的计算体验更加个性化。\n\n你的工作空间已准备就绪。让我们继续设置适合你的服务。", TextWrapping = TextWrapping.Wrap, MaxWidth = 440 },
                 PrimaryButtonText = "接受并继续", CloseButtonText = "跳过，直接计算"
             };
             var pending = probe.ShowAsync();
@@ -87,6 +94,32 @@ public sealed partial class MainWindow
             var reloaded = store.Load();
             Check("UI preferences and history persist", reloaded.Onboarded && reloaded.History.Count > 0);
             await Capture(Path.Combine(outputDirectory, "07-final.png"));
+            AnimateKey(EqualsButton, true);
+            AnimateKey(EqualsButton, false);
+            AnimationToggle.IsOn = false;
+            Check("Disabling motion resets key scale", ElementCompositionPreview.GetElementVisual(EqualsButton).Scale == System.Numerics.Vector3.One);
+            Check("Motion preference disables custom animations", !MotionEnabled);
+            AnimationToggle.IsOn = true;
+            var originalSize = AppWindow.Size;
+            var scale = Root.XamlRoot.RasterizationScale;
+            AppWindow.Resize(new SizeInt32((int)(560 * scale), (int)(610 * scale)));
+            await Task.Delay(300);
+            Check("Narrow window hides secondary pane", AssistantPanel.Visibility == Visibility.Collapsed);
+            Check("Narrow window preserves keypad access", EqualsButton.TransformToVisual(Root).TransformPoint(new Point(0, EqualsButton.ActualHeight)).Y <= Root.ActualHeight - 24);
+            await Capture(Path.Combine(outputDirectory, "08-compact.png"));
+            Navigate("settings");
+            await Capture(Path.Combine(outputDirectory, "11-compact-settings.png"));
+            Navigate("calc");
+            AppWindow.Resize(originalSize);
+            Root.RequestedTheme = ElementTheme.Dark;
+            await Task.Delay(300);
+            await Capture(Path.Combine(outputDirectory, "09-dark.png"));
+            Check("Dark theme applies", Root.ActualTheme == ElementTheme.Dark);
+            Root.RequestedTheme = ElementTheme.Light;
+            await Task.Delay(250);
+            SideTabs.SelectedIndex = 1;
+            Check("History is available beside the keypad", RecentItems.Children.Count > 0);
+            await Capture(Path.Combine(outputDirectory, "10-side-history.png"));
             File.WriteAllText(Path.Combine(outputDirectory, "results.json"), JsonSerializer.Serialize(new { success = true, checks }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception e)
@@ -99,9 +132,16 @@ public sealed partial class MainWindow
     private async Task Capture(string path, FrameworkElement? target = null)
     {
         Root.UpdateLayout();
-        await Task.Delay(150);
+        await Task.Delay(250);
         var bitmap = new RenderTargetBitmap();
-        await bitmap.RenderAsync(target ?? Root);
+        // Mica lives outside the XAML tree. Use its solid fallback while capturing XAML, then restore.
+        var background = Root.Background;
+        try
+        {
+            Root.Background = new SolidColorBrush(Root.ActualTheme == ElementTheme.Dark ? Microsoft.UI.ColorHelper.FromArgb(255, 32, 32, 32) : Microsoft.UI.ColorHelper.FromArgb(255, 243, 243, 243));
+            await bitmap.RenderAsync(target ?? Root);
+        }
+        finally { Root.Background = background; }
         var pixels = await bitmap.GetPixelsAsync();
         var file = await StorageFile.GetFileFromPathAsync(CreateEmptyFile(path));
         using var stream = await file.OpenAsync(FileAccessMode.ReadWrite);

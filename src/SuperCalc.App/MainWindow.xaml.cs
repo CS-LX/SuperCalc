@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
     private readonly string? smokeDirectory;
     private readonly AppState state;
     private bool ready, busy, dialogOpen, allowClose, hasResult, isClosed;
+    private bool assistantRequested = true;
     private decimal lastResult;
     private string currentPage = "calc";
     private bool Satire => !state.FocusMode;
@@ -38,7 +39,7 @@ public sealed partial class MainWindow : Window
         AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "SuperCalc.ico"));
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
-        AppWindow.Resize(new SizeInt32(Math.Min(1380, area.Width - 60), Math.Min(1000, area.Height - 50)));
+        AppWindow.Resize(new SizeInt32(Math.Min(1000, area.Width - 60), Math.Min(760, area.Height - 50)));
         AppWindow.Move(new PointInt32(area.X + (area.Width - AppWindow.Size.Width) / 2, area.Y + (area.Height - AppWindow.Size.Height) / 2));
         AppWindow.Closing += Window_Closing;
         Closed += (_, _) => isClosed = true;
@@ -50,6 +51,8 @@ public sealed partial class MainWindow : Window
         Root.Loaded += Root_Loaded;
         Root.SizeChanged += (_, _) => ApplyMode();
         BuildMuseum();
+        InitializeMotion();
+        Activated += (_, e) => TitleBar.Opacity = e.WindowActivationState == WindowActivationState.Deactivated ? 0.55 : 1;
         ready = true;
         ApplyMode();
     }
@@ -58,7 +61,7 @@ public sealed partial class MainWindow : Window
     {
         var scale = Root.XamlRoot.RasterizationScale;
         var area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
-        AppWindow.Resize(new SizeInt32(Math.Min((int)(1380 * scale), area.Width - 40), Math.Min((int)(1000 * scale), area.Height - 40)));
+        AppWindow.Resize(new SizeInt32(Math.Min((int)(1000 * scale), area.Width - 40), Math.Min((int)(760 * scale), area.Height - 40)));
         AppWindow.Move(new PointInt32(area.X + (area.Width - AppWindow.Size.Width) / 2, area.Y + (area.Height - AppWindow.Size.Height) / 2));
         if (smokeDirectory is not null) { await RunSmokeTest(smokeDirectory); return; }
         if (store.LastError is not null) Notify("本地存储", store.LastError, InfoBarSeverity.Warning);
@@ -75,40 +78,35 @@ public sealed partial class MainWindow : Window
     private void RefreshStats()
     {
         if (isClosed) return;
-        SessionStats.Text = $"{state.Calculations} 次计算  /  {state.Ceremonies} 次体验  /  100% 本地";
+        SessionStats.Text = $"{state.Calculations} 次计算  ·  {state.History.Count} 条历史记录";
         var score = Math.Min(100, 42 + (state.LocalPersona ? 18 : 0) + (state.PremiumPretend ? 25 : 0) + Math.Min(15, state.Ceremonies));
         HealthScore.Text = $"{score} / 100";
         HealthProgress.Value = score;
-        AccountLabel.Text = state.LocalPersona ? "尊贵的本地体验者" : "本地体验者";
+        AccountLabel.Text = state.LocalPersona ? "SuperCalc 用户" : "个人资料";
         MemoryLabel.Text = state.Memory == 0 ? "M · 空" : "M · " + Calculator.Format(state.Memory);
     }
 
     private void ApplyMode()
     {
         if (!ready || isClosed) return;
-        var showSide = !state.FocusMode && Root.ActualWidth >= 800;
-        Sidebar.Visibility = showSide ? Visibility.Visible : Visibility.Collapsed;
-        CompactNavigation.Visibility = showSide ? Visibility.Collapsed : Visibility.Visible;
-        NavColumn.Width = new GridLength(showSide ? 224 : 0);
-        var showAssistant = Satire && Root.ActualWidth >= 1130;
-        CalculatorPage.MaxWidth = state.FocusMode ? 640 : double.PositiveInfinity;
-        CalculatorPage.HorizontalAlignment = state.FocusMode ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        Navigation.IsPaneVisible = !state.FocusMode;
+        var showAssistant = Satire && assistantRequested && Root.ActualWidth >= 720;
         AssistantPanel.Visibility = showAssistant ? Visibility.Visible : Visibility.Collapsed;
-        AssistantColumn.Width = new GridLength(showAssistant ? 296 : 0);
-        WelcomeBanner.Visibility = Satire ? Visibility.Visible : Visibility.Collapsed;
-        RecommendationCard.Visibility = Satire && state.Recommendations ? Visibility.Visible : Visibility.Collapsed;
-        SearchPromotion.Visibility = Satire && state.Recommendations ? Visibility.Visible : Visibility.Collapsed;
-        PreviewBadge.Visibility = Satire ? Visibility.Visible : Visibility.Collapsed;
-        KeypadTip.Visibility = Satire ? Visibility.Visible : Visibility.Collapsed;
-        if (state.FocusMode && hasResult) ResultCaption.Text = "计算完成";
-        PageSubtitle.Text = state.FocusMode ? "直接输入，直接得到答案。" : currentPage switch
+        AssistantColumn.Width = new GridLength(showAssistant ? 300 : 0);
+        var hasHeight = Root.ActualHeight >= 650;
+        DisplayRow.Height = new GridLength(hasHeight ? 150 : 124);
+        ResultText.FontSize = hasHeight ? 56 : 40;
+        foreach (var key in Keypad.Children.OfType<Button>())
         {
-            "history" => "每一次等号，都值得被记住。",
-            "settings" => "你的偏好很重要，所以我们把它放在这里。",
-            "museum" => "从真实槽点，到过量体验。",
-            _ => "一个简单的答案，值得一整套生态。"
-        };
-        StatusText.Text = state.FocusMode ? "● 专注模式 · 无推荐、无等待、无挽留" : "● 所有系统都在为一个等号努力";
+            if (hasHeight) key.ClearValue(Control.FontSizeProperty);
+            else key.FontSize = 20;
+            key.Padding = new Thickness(hasHeight ? 4 : 0);
+        }
+        WelcomeBanner.Visibility = Satire && hasHeight ? Visibility.Visible : Visibility.Collapsed;
+        RecommendationCard.Visibility = Satire && state.Recommendations && hasHeight ? Visibility.Visible : Visibility.Collapsed;
+        SearchPromotion.Visibility = Satire && state.Recommendations ? Visibility.Visible : Visibility.Collapsed;
+        if (state.FocusMode && hasResult) ResultCaption.Text = "计算完成";
+        StatusText.Text = state.FocusMode ? "专注模式" : "就绪";
         RefreshStats();
     }
 
@@ -125,12 +123,43 @@ public sealed partial class MainWindow : Window
         if (!ready) return;
         state.DramaticMode = DramaToggle.IsOn;
         state.Animations = AnimationToggle.IsOn;
+        if (!state.Animations) ResetMotion();
         state.Recommendations = RecommendationsToggle.IsOn;
         state.ExitSurvey = ExitToggle.IsOn;
         ApplyMode(); Save();
     }
 
-    private void Navigate_Click(object sender, RoutedEventArgs e) => Navigate((string)((Button)sender).Tag);
+    private void Navigation_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+    {
+        if (!ready) return;
+        if (args.IsSettingsInvoked) { Navigate("settings"); return; }
+        switch (args.InvokedItemContainer?.Tag as string)
+        {
+            case "cloud": Cloud_Click(sender, new RoutedEventArgs()); break;
+            case "premium": Premium_Click(sender, new RoutedEventArgs()); break;
+            case "account": Account_Click(sender, new RoutedEventArgs()); break;
+            case string page: Navigate(page); break;
+        }
+        Navigation.IsPaneOpen = false;
+    }
+    private void History_Click(object sender, RoutedEventArgs e) => Navigate("history");
+    private void SideTabs_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (ready) RenderRecent(); }
+    private async void Panel_Click(object sender, RoutedEventArgs e)
+    {
+        if (Root.ActualWidth < 720)
+        {
+            if (await Dialog("CalcPilot", PilotReply.Text, "解释当前结果") == ContentDialogResult.Primary)
+            {
+                await RunPilot();
+                if (!isClosed) await Dialog("CalcPilot", PilotReply.Text, "完成");
+            }
+            return;
+        }
+        assistantRequested = state.FocusMode || !assistantRequested;
+        if (state.FocusMode) FocusToggle.IsOn = false;
+        ApplyMode();
+        if (assistantRequested) AnimateEntrance(AssistantPanel);
+    }
     private void Navigate(string page)
     {
         currentPage = page;
@@ -138,11 +167,11 @@ public sealed partial class MainWindow : Window
         HistoryPage.Visibility = page == "history" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPage.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
         MuseumPage.Visibility = page == "museum" ? Visibility.Visible : Visibility.Collapsed;
-        PageTitle.Text = page switch { "history" => "计算时间线", "settings" => "体验设置", "museum" => "设计博物馆", _ => "计算器" };
-        foreach (var (button, tag) in new[] { (CalcNav, "calc"), (HistoryNav, "history"), (SettingsNav, "settings"), (MuseumNav, "museum") })
-            button.Background = new SolidColorBrush(tag == page ? ColorHelper.FromArgb(255, 222, 222, 247) : Colors.Transparent);
+        PageTitle.Text = page switch { "history" => "历史记录", "settings" => "设置", "museum" => "新增功能", _ => "标准" };
+        Navigation.SelectedItem = page switch { "history" => HistoryNav, "museum" => MuseumNav, "settings" => Navigation.SettingsItem, _ => CalcNav };
         if (page == "history") RenderHistory();
         ApplyMode();
+        AnimateEntrance(page switch { "history" => HistoryPage, "settings" => SettingsPage, "museum" => MuseumPage, _ => CalculatorPage });
     }
 
     private void Insert(string text)
@@ -181,7 +210,7 @@ public sealed partial class MainWindow : Window
             {
                 state.Ceremonies++;
                 ThinkingBar.Visibility = Visibility.Visible;
-                foreach (var message in new[] { "正在准备您的数字工作空间…", "正在为结果应用圆角…", "正在确认 1 + 1 的兼容性…" })
+                foreach (var message in new[] { "正在准备你的工作空间…", "正在优化结果显示…", "正在检查兼容性…" })
                 {
                     if (state.FocusMode) break;
                     StatusText.Text = message;
@@ -192,14 +221,16 @@ public sealed partial class MainWindow : Window
             lastResult = value;
             hasResult = true;
             ResultText.Text = Calculator.Format(value);
-            ResultCaption.Text = Satire ? "计算已完成。体验才刚刚开始。" : "计算完成";
+            ResultCaption.Text = "计算完成";
+            AnimateEntrance(ResultText);
             state.Record(expression, value);
+            RenderRecent();
             if (Satire)
             {
-                PilotReply.Text = $"我注意到你得到了 {Calculator.Format(value)}。要不要把它变成一次战略机遇？";
+                PilotReply.Text = $"结果为 {Calculator.Format(value)}。需要我为你提供进一步的分析或建议吗？";
                 RecommendationText.Text = $"喜欢 {Calculator.Format(value)}？你可能也会喜欢 SuperCalc 365。";
                 if (Drama && state.Calculations % 3 == 0)
-                    Notify("帮助我们变得更好", "你刚完成一次计算。欢迎在“优化我的体验”里为这次等号评分。");
+                    Notify("帮助我们变得更好", "你对这次计算体验满意吗？前往 CalcPilot 查看个性化建议。");
             }
             Save();
         }
@@ -210,7 +241,8 @@ public sealed partial class MainWindow : Window
             ResultCaption.Text = "请修改算式后重试";
             var message = ex is OverflowException ? "结果超出 decimal 数值范围（约 29 位有效数字）。" : ex.Message;
             Notify(Drama ? "出现了一些问题，但我们正在改善体验" : "无法计算", message, InfoBarSeverity.Error);
-            if (Drama) PilotReply.Text = "建议：重新输入算式。购买更多圆角并不能修复数学错误。";
+            if (Drama) PilotReply.Text = "检查算式并重试，或使用 CalcPilot 获取更多帮助。";
+            AnimateError();
         }
         finally
         {
@@ -246,7 +278,7 @@ public sealed partial class MainWindow : Window
     {
         if (busy) return;
         ExpressionBox.Text = ""; ResultText.Text = "0"; lastResult = 0; hasResult = false;
-        ResultCaption.Text = Satire ? "清空的是数字，不是可能性。" : "准备就绪";
+        ResultCaption.Text = "就绪";
         Notice.IsOpen = false;
         ExpressionBox.Focus(FocusState.Programmatic);
     }
@@ -302,7 +334,7 @@ public sealed partial class MainWindow : Window
         AddMenu(menu, "计算器", () => Navigate("calc"));
         AddMenu(menu, "计算时间线", () => Navigate("history"));
         AddMenu(menu, "体验设置", () => Navigate("settings"));
-        AddMenu(menu, "设计博物馆", () => Navigate("museum"));
+        AddMenu(menu, "新增功能", () => Navigate("museum"));
         menu.Items.Add(new MenuFlyoutSeparator());
         AddMenu(menu, "插入左括号 (", () => Insert("("));
         AddMenu(menu, "插入右括号 )", () => Insert(")"));
@@ -324,15 +356,15 @@ public sealed partial class MainWindow : Window
         if (Drama)
         {
             state.Ceremonies++;
-            var choice = await Dialog("分享您的生产力", "推荐：将数字保存到 OneNumber，开启跨设备想象。\n\n只想复制？经典命令已迁移到“显示更多选项”。", "显示更多选项", "取消", "模拟云同步");
+            var choice = await Dialog("分享计算结果", "使用 OneNumber 管理你的数字工作空间。\n\n若要使用其他应用，请选择“显示更多选项”。", "显示更多选项", "取消", "保存到 OneNumber");
             if (choice == ContentDialogResult.Secondary) { Cloud_Click(sender, e); return; }
             if (choice != ContentDialogResult.Primary) return;
-            if (await Dialog("传统剪贴板属性", "剪贴板版本：1995（精神上）\n对象类型：一个数字\n\n已找到您从一开始就想使用的命令。", "复制结果", "取消") != ContentDialogResult.Primary) return;
+            if (await Dialog("剪贴板属性", "常规  |  详细信息\n\n对象类型：数值\n格式：Unicode 文本\n目标：Windows 剪贴板", "复制", "取消") != ContentDialogResult.Primary) return;
         }
         try
         {
             var data = new DataPackage(); data.SetText(ResultText.Text); Clipboard.SetContent(data);
-            Notify("已复制", Satire ? "经历两代界面，数字终于抵达剪贴板。" : "结果已复制到剪贴板。");
+            Notify("已复制", "结果已复制到剪贴板。", InfoBarSeverity.Success);
             Save();
         }
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException) { Notify("剪贴板暂不可用", "请稍后再试。", InfoBarSeverity.Warning); }
@@ -346,7 +378,7 @@ public sealed partial class MainWindow : Window
         {
             var dialog = new ContentDialog
             {
-                XamlRoot = Root.XamlRoot, RequestedTheme = ElementTheme.Light, Title = title,
+                XamlRoot = Root.XamlRoot, RequestedTheme = Root.ActualTheme, Title = title,
                 Content = content is string text ? new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, LineHeight = 24, MaxWidth = 440 } : content,
                 PrimaryButtonText = primary, CloseButtonText = close, SecondaryButtonText = secondary ?? "",
                 DefaultButton = ContentDialogButton.Primary
@@ -361,9 +393,9 @@ public sealed partial class MainWindow : Window
         if (dialogOpen) return;
         var steps = new[]
         {
-            ("让我们完成计算器的设置", "1 / 3   欢迎来到数字生活的新篇章\n\n在您计算 2 + 2 之前，我们希望先了解您的梦想。\n\n这是独立讽刺应用。所有账号、云、订阅与 AI 只在本地演出。"),
-            ("为每一个数字找到归属", "2 / 3   您的数字值得一个账户\n\n登录可以同步您的愿景，备份您的可能性，并让 7 在所有设备上仍然是 7。\n\n此处没有真实登录，也不索取任何个人信息。"),
-            ("使用推荐设置，释放您的潜力", "3 / 3   我们已为您推荐所有推荐\n\n✓ 个性化数字灵感\n✓ CalcPilot 深度仪式\n✓ 体验健康度与退出关怀\n\n随时打开“让我算数”，恢复清静。")
+            ("让我们完成设备设置", "1 / 3   充分利用 SuperCalc\n\n只需再完成几个步骤，即可让你的计算体验更加个性化。\n\n你的工作空间已准备就绪。让我们继续设置适合你的服务。"),
+            ("将你的数字集中在一处", "2 / 3   为你而设的工作空间\n\n使用个人资料管理偏好、访问最近的计算，并在 OneNumber 中整理你的结果。\n\n你可以稍后在设置中管理个人资料。"),
+            ("使用推荐设置", "3 / 3   获取为你量身定制的体验\n\n✓ 个性化建议与优惠\n✓ CalcPilot 智能工作流\n✓ 体验健康度与反馈\n\n你可以随时在设置中调整这些选项。")
         };
         foreach (var (title, body) in steps)
         {
@@ -377,24 +409,26 @@ public sealed partial class MainWindow : Window
     private async void Account_Click(object sender, RoutedEventArgs e)
     {
         state.Ceremonies++;
-        if (await Dialog("一个账户，连接所有小数点", "账户权益（本地模拟）\n\n• 数字跨设备漫游：在想象中已同步\n• 个人化称呼：尊贵的本地体验者\n• 体验健康度：立即 +18\n\n不需要邮箱、密码或互联网。", "创建本地体验身份", "暂时保持不完整") == ContentDialogResult.Primary)
-        { state.LocalPersona = true; Notify("身份已升级", "欢迎，尊贵的本地体验者。您的数据仍只在本机。"); }
+        if (await Dialog("一个资料，更多可能", "SuperCalc 个人资料\n\n• 将你的计算与偏好集中在一处\n• 获取更适合你的工作流建议\n• 完成体验健康度检查\n\n选择继续以初始化此设备上的个人资料。", "继续", "稍后提醒我") == ContentDialogResult.Primary)
+        { state.LocalPersona = true; Notify("个人资料已就绪", "你可以在设置中管理自己的偏好。", InfoBarSeverity.Success); }
         Save();
     }
     private async void Premium_Click(object sender, RoutedEventArgs e)
     {
         state.Ceremonies++;
-        if (await Dialog("SuperCalc 365 · 为可能性付费", "免费版：无限次正确计算\n\n想象版：¥ 0 / 永久\n✓ 365 个不存在的增值权益\n✓ 云端小数点与企业级等号\n✓ 尊贵体验徽章\n\n这是一张讽刺套餐卡，不会发生购买。", "免费领取虚构权益", "继续免费算数") == ContentDialogResult.Primary)
-        { state.PremiumPretend = true; Notify("想象版已激活", "您已拥有全部虚构权益。计算精度没有变化。"); }
+        if (await Dialog("使用 SuperCalc 365 做到更多", "你的下一个灵感，从这里开始。\n\n预览权益  ·  ¥ 0\n✓ 个性化工作空间\n✓ CalcPilot 回答方式\n✓ 增强结果管理\n\n立即开始，让每一次计算更进一步。", "开始使用", "暂时跳过") == ContentDialogResult.Primary)
+        { state.PremiumPretend = true; Notify("欢迎使用 SuperCalc 365", "你的预览权益已启用。", InfoBarSeverity.Success); }
         Save();
     }
     private async void Cloud_Click(object sender, RoutedEventArgs e)
     {
         state.Ceremonies++;
-        await Dialog("OneNumber · 数字有了新家", $"云端状态：在想象中运行良好\n本地历史：{state.History.Count} 条\n实际上上传：0 字节\n\n同步冲突：设备 A 的 2 与设备 B 的 2 完全相同。请不要担心，我们还是为此准备了一个对话框。", "保留这两个 2", "返回本地");
-        Notify("冲突已解决", "两个 2 都安全地留在了本地。没有发出网络请求。"); Save();
+        var choice = await Dialog("OneNumber 需要你的关注", $"工作空间中有 {state.History.Count} 条记录。\n\n发现名称相同的项目，请选择要保留的版本。\n\n此设备：2\n其他版本：2", "保留两个副本", "稍后处理");
+        if (choice == ContentDialogResult.Primary) Notify("已保留两个副本", "你可以继续使用工作空间。", InfoBarSeverity.Success);
+        Save();
     }
-    private async void Pilot_Click(object sender, RoutedEventArgs e)
+    private async void Pilot_Click(object sender, RoutedEventArgs e) => await RunPilot();
+    private async Task RunPilot()
     {
         if (busy || dialogOpen) return;
         busy = true;
@@ -407,26 +441,26 @@ public sealed partial class MainWindow : Window
         {
             1 => $"你做到了！{ResultText.Text} 不只是一个数字，更是你迈向无限可能的一小步。",
             2 => $"建议围绕 {ResultText.Text} 建立数字化闭环，通过等号赋能，以圆角为抓手，持续对齐计算生态。",
-            _ => $"经本地剧本深度分析，当前结果为 {ResultText.Text}。建议下一步：使用这个数字。分析完毕，消耗 0 积分。"
+            _ => $"当前计算结果为 {ResultText.Text}。你可以将其用于后续计算，或保存到工作空间以便稍后继续。"
         };
-        ThinkingBar.Visibility = Visibility.Collapsed; busy = false; Save();
+        ThinkingBar.Visibility = Visibility.Collapsed; AnimateEntrance(PilotReply); busy = false; Save();
     }
     private void Recommendation_Click(object sender, RoutedEventArgs e)
     {
         if (busy) return;
         Navigate("calc"); ExpressionBox.Text = "365 × 0";
         ExpressionBox.Focus(FocusState.Programmatic);
-        Notify("推荐已应用", "多少虚构权益乘以零，都是免费的。");
+        Notify("已为你准备算式", "按 Enter 查看结果。");
     }
     private async void Optimize_Click(object sender, RoutedEventArgs e)
     {
         state.Ceremonies++;
         var rating = new RatingControl { Caption = "请评价本次等号", MaxRating = 5, Value = 5 };
         var panel = new StackPanel { Spacing = 16 };
-        panel.Children.Add(new TextBlock { Text = "体验越多，分数越高。计算正确率不参与评分。", TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new TextBlock { Text = "你对最近的计算体验满意吗？请帮助我们持续改进。", TextWrapping = TextWrapping.Wrap });
         panel.Children.Add(rating);
-        if (await Dialog("你的反馈对我们至关重要", panel, "本地提交反馈", "以后再说") == ContentDialogResult.Primary)
-        { HealthText.Text = $"已收到 {rating.Value:0} 星。反馈留在本次会话中。"; Notify("感谢反馈", "我们将优先考虑让按钮更圆。"); }
+        if (await Dialog("你的反馈对我们至关重要", panel, "提交反馈", "以后再说") == ContentDialogResult.Primary)
+        { HealthText.Text = $"感谢你的 {rating.Value:0} 星评价。"; Notify("感谢反馈", "你的意见有助于改善 SuperCalc。", InfoBarSeverity.Success); }
         Save();
     }
     private async void Legacy_Click(object sender, RoutedEventArgs e)
@@ -434,23 +468,23 @@ public sealed partial class MainWindow : Window
         state.Ceremonies++;
         var panel = new StackPanel { Spacing = 12, Background = new SolidColorBrush(ColorHelper.FromArgb(255, 236, 233, 216)), Padding = new Thickness(16) };
         panel.Children.Add(new TextBlock { Text = "数字属性   |   常规   |   高级", FontFamily = new FontFamily("Tahoma"), Foreground = new SolidColorBrush(Colors.Black) });
-        panel.Children.Add(new TextBlock { Text = "此设备工作正常。\n\n数字驱动程序：decimal.sys（虚构）\n精度：约 29 位有效数字\n百分数：x% = x / 100\n平方根：使用浮点近似\n\n现代设置暂未迁移这个页面。", TextWrapping = TextWrapping.Wrap, Foreground = new SolidColorBrush(Colors.Black) });
-        panel.Children.Add(new CheckBox { Content = "使用圆角兼容模式（仅供欣赏）", IsChecked = true, IsEnabled = false });
+        panel.Children.Add(new TextBlock { Text = "此设备工作正常。\n\n计算引擎：Decimal\n精度：约 29 位有效数字\n百分数：x% = x / 100\n平方根：使用浮点近似\n\n部分选项由系统管理。", TextWrapping = TextWrapping.Wrap, Foreground = new SolidColorBrush(Colors.Black) });
+        panel.Children.Add(new CheckBox { Content = "启用兼容性优化", IsChecked = true, IsEnabled = false });
         await Dialog("高级数字属性（传统）", panel, "确定", "取消", "应用"); Save();
     }
     private async void Update_Click(object sender, RoutedEventArgs e)
     {
         if (busy || dialogOpen) return;
         state.Ceremonies++;
-        var choice = await Dialog("体验更新已就绪", "SuperCalc 体验包 KB000042（模拟）\n\n• 等号圆角增加 0.5 px\n• 改进“改进体验”的体验\n• 将一个设置移动到另一个设置\n\n实际版本不变，无下载、无系统修改。", "模拟安装", "推迟到下一个等号");
+        var choice = await Dialog("体验更新已就绪", "SuperCalc 体验包 KB000042\n\n• 优化结果显示和控件响应\n• 改善工作空间体验\n• 更新推荐设置\n\n应用更新后，你可以继续计算。", "立即应用", "稍后提醒我");
         if (choice == ContentDialogResult.Primary)
         {
             busy = true;
-            StatusText.Text = "正在优化圆角… 99%";
+            StatusText.Text = "正在应用体验更新… 99%";
             if (state.Animations && Satire) await Task.Delay(750);
             if (isClosed) return;
             busy = false;
-            Notify("体验更新完成", "没有任何文件被下载。您现在可以体验完全相同的计算器。");
+            Notify("你已准备就绪", "已应用最新的体验设置。", InfoBarSeverity.Success);
         }
         Save(); ApplyMode();
     }
@@ -479,23 +513,23 @@ public sealed partial class MainWindow : Window
     private async void ClearHistory_Click(object sender, RoutedEventArgs e)
     {
         if (await Dialog("清空本机计算历史？", "最多 100 条历史记录将从此设备移除。此操作无法撤销。", "清空历史", "保留") != ContentDialogResult.Primary) return;
-        state.History.Clear(); Save(); RenderHistory();
+        state.History.Clear(); Save(); RenderHistory(); RenderRecent();
     }
 
     private void BuildMuseum()
     {
         var exhibits = new[]
         {
-            ("01 / 首次启动", "三页欢迎向导、接受推荐、账户归属感、完成设置、可跳过的仪式。"),
-            ("02 / 到处都是入口", "Fluent 侧栏、PREVIEW 徽章、OneNumber 云盘、365 套餐、体验健康分。"),
-            ("03 / 输入一个数字", "推荐数字、赞助式灵感、占据侧栏的 AI、答案语气、虚构积分。"),
-            ("04 / 按下等号", "准备工作空间、应用圆角、兼容性检查、计算后的推荐与反馈提醒。"),
-            ("05 / 复制一个结果", "分享优先、显示更多选项、传统剪贴板属性、跨两代界面才到复制。"),
-            ("06 / 寻找历史", "本地搜索前的网页式推荐、计算时间线、再次体验按钮、最多 100 条本地历史。"),
-            ("07 / 调整设置", "多级面包屑、把广告叫推荐、相关设置、复古控制面板、无用兼容开关。"),
-            ("08 / 服务与更新", "免费虚构订阅、假云端冲突、KB000042 圆角更新、99% 等待。"),
-            ("09 / 准备离开", "退出挽留、完成体验或直接退出、星级反馈、一键专注逃生口。"),
-            ("10 / 设计不是敌人", "好看的界面与实用性可以兼得。讽刺的是把业务指标放在用户任务之前。所有模拟均在本地，不上传、不收费。")
+            ("为你量身定制", "完成设备设置，获取更适合自己的计算体验。"),
+            ("全新的工作空间", "使用紧凑导航快速访问常用工具和服务。"),
+            ("认识 CalcPilot", "在当前算式旁获取解释、建议和下一步灵感。"),
+            ("更流畅的计算", "全新的过渡动画，让每一步操作都有清晰反馈。"),
+            ("分享你的结果", "通过 OneNumber 或其他应用继续你的工作。"),
+            ("从上次离开的地方继续", "快速搜索最近的计算，并将算式重新带回工作区。"),
+            ("按你的方式工作", "在设置中调整建议、动画和增强计算体验。"),
+            ("保持最新", "获取最新体验设置，持续改善日常工作流。"),
+            ("你的意见很重要", "告诉我们哪些功能对你最有帮助。"),
+            ("专注当下", "开启专注模式，为当前计算保留更多空间。")
         };
         foreach (var (title, body) in exhibits)
         {
@@ -507,7 +541,7 @@ public sealed partial class MainWindow : Window
     }
 
     private void Notify(string title, string message, InfoBarSeverity severity = InfoBarSeverity.Informational)
-    { if (isClosed) return; Notice.Title = title; Notice.Message = message; Notice.Severity = severity; Notice.IsOpen = true; }
+    { if (isClosed) return; Notice.Title = title; Notice.Message = message; Notice.Severity = severity; Notice.IsOpen = true; AnimateEntrance(Notice); }
 
     private void CloseSafely()
     {
@@ -527,7 +561,7 @@ public sealed partial class MainWindow : Window
         // An existing modal must never trap the user in the application.
         if (!Satire || !state.ExitSurvey || dialogOpen) return;
         args.Cancel = true;
-        var choice = await Dialog("你的生产力旅程还未结束", $"你已完成 {state.Calculations} 次计算，体验了 {state.Ceremonies} 次额外流程。\n\n直接退出会错过很多我们刚刚想出来的可能性。", "直接退出", "继续计算", "再体验一下");
+        var choice = await Dialog("离开之前，帮助我们改善体验", $"你已完成 {state.Calculations} 次计算。\n\n花一点时间评价 SuperCalc，帮助我们为你提供更好的服务。", "直接退出", "继续计算", "提供反馈");
         if (choice == ContentDialogResult.Primary)
         {
             allowClose = true;
