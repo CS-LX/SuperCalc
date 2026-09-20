@@ -37,8 +37,27 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: SuperCalc-win-x64-packages
+          pattern: SuperCalc-*-win-x64-*
           path: packages
+      - name: Prepare independent release ZIPs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $packageDirectories = @(Get-ChildItem packages -Directory)
+          if ($packageDirectories.Count -ne 2) { throw 'Expected two independent build artifacts.' }
+          $checksums = @()
+          foreach ($directory in $packageDirectories) {
+            if (!(Test-Path (Join-Path $directory.FullName 'SuperCalc.App.exe'))) { throw 'Artifact must contain application files directly.' }
+            $archiveName = "$($directory.Name).zip"
+            $archivePath = Join-Path packages $archiveName
+            Compress-Archive -Path "$($directory.FullName)/*" -DestinationPath $archivePath -CompressionLevel Optimal
+            $digest = (Get-FileHash $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+            $checksums += "$digest  $archiveName"
+          }
+          $checksums | Set-Content packages/SHA256SUMS.txt -Encoding utf8
+          $notes = Get-Content (Join-Path $packageDirectories[0].FullName 'README.md') -Raw
+          $build = Get-Content (Join-Path $packageDirectories[0].FullName 'BUILD.txt') -Raw
+          "$notes`n`n$build" | Set-Content packages/RELEASE-NOTES.md -Encoding utf8
       - name: Publish release assets
         shell: pwsh
         env:

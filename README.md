@@ -14,7 +14,7 @@
 
 - Windows 11 / Windows 10 2004（19041）及以上，x64。实际验证环境为 Windows 11 x64。
 - `self-contained` 自包含包携带 .NET 与 Windows App SDK；`lightweight` 轻量包需要已安装 x64 .NET 8 Runtime 和兼容的 Windows App Runtime 1.8。下载链接见 [包使用说明](docs/release.md)。
-- ZIP 文件名包含提交 SHA 的前 12 位，包内 `BUILD.txt` 记录完整 SHA，并附带 `SHA256SUMS.txt` 校验文件。
+- ZIP 文件名包含提交 SHA 的前 12 位，包内 `BUILD.txt` 记录完整 SHA；Release 另外提供 `SHA256SUMS.txt` 校验文件。
 - 当前版本没有代码签名或安装器。
 - 首次启动有三页向导；可以跳过，也可以在“设置”里重放。
 - 右上角 **专注** 一键关闭推荐、求值等待与退出挽留。小窗口自动收起侧栏，原生导航可从左上角菜单打开。
@@ -75,7 +75,7 @@ dotnet run --project tests/SuperCalc.Tests -c Release
 ./scripts/smoke.ps1
 ```
 
-测试报告见 [验证记录](docs/validation.md)。GitHub Actions 在 Windows runner 上测试并上传 `SuperCalc-win-x64-packages`，包含两个 ZIP 与校验文件。
+测试报告见 [验证记录](docs/validation.md)。GitHub Actions 启动两个并行 Windows 构建任务：`Package (self-contained)` 和 `Package (lightweight)`。各自上传一个带 SHA 的独立 Artifact，下载得到对应 ZIP，解压即可看到应用文件，没有外层合集或嵌套 ZIP。标签发布会收集两个产物，分别作为 Release ZIP 附件。
 
 发布时将 `vX.X.X.X` 标签推送到 GitHub，例如 `v1.2.3.4`。工作流验证标签指向的提交属于 `main` 历史，并从该标签提交构建、写入对应程序集版本，然后将两种 ZIP 与 SHA256 校验文件发布到同名 Release。非主分支提交、非四段数字或超出程序集版本范围的标签不会发布。普通主分支推送只生成 Actions 构建产物。
 

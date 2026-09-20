@@ -15,8 +15,13 @@ permissions:
   contents: read
 jobs:
   build:
+    name: Package (${{ matrix.variant }})
     runs-on: windows-2022
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [self-contained, lightweight]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -25,14 +30,16 @@ jobs:
       - name: Test release tag guards
         shell: pwsh
         run: ./tests/ReleaseTag.Tests.ps1
-      - name: Test and package both deployment variants
+      - name: Test and prepare deployment package
+        id: package
         shell: pwsh
         env:
           BUILD_VERSION: ${{ inputs.version }}
-        run: ./scripts/build.ps1 -Package -Version $env:BUILD_VERSION
+          PACKAGE_VARIANT: ${{ matrix.variant }}
+        run: ./scripts/build.ps1 -Package -Version $env:BUILD_VERSION -Variant $env:PACKAGE_VARIANT -ArtifactUpload
       - uses: actions/upload-artifact@v4
         with:
-          name: SuperCalc-win-x64-packages
-          path: artifacts/packages/*
+          name: ${{ steps.package.outputs.artifact-name }}
+          path: ${{ steps.package.outputs.artifact-path }}/
           if-no-files-found: error
-          compression-level: 0
+          compression-level: 6
