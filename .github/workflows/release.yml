@@ -1,46 +1,61 @@
-name: Publish Windows release
+name: Publish tagged Windows release
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag
-        required: true
-        default: v1.0.0
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+.[0-9]+']
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  release:
+  validate:
     runs-on: windows-2022
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      - name: Test and publish
+          fetch-depth: 0
+      - name: Validate four-part version and main ancestry
+        id: tag
         shell: pwsh
-        run: ./scripts/build.ps1 -Publish
-      - name: Archive complete application
-        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          if (!(Test-Path artifacts/SuperCalc-win-x64/SuperCalc.App.pri)) { throw 'Missing XAML resource index' }
-          Copy-Item LICENSE artifacts/SuperCalc-win-x64/LICENSE.txt
-          Copy-Item docs/release-v1.0.0.md artifacts/SuperCalc-win-x64/README.md
-          Compress-Archive -Path artifacts/SuperCalc-win-x64/* -DestinationPath artifacts/SuperCalc-win-x64.zip -CompressionLevel Optimal
-          $digest = (Get-FileHash artifacts/SuperCalc-win-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$digest  SuperCalc-win-x64.zip" | Set-Content artifacts/SHA256SUMS.txt
+          ./scripts/validate-release-tag.ps1 -Tag $env:RELEASE_TAG
+          "version=$($env:RELEASE_TAG.Substring(1))" >> $env:GITHUB_OUTPUT
+  build:
+    needs: validate
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
+  release:
+    needs: [validate, build]
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: SuperCalc-win-x64-packages
+          path: packages
       - name: Publish release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+([.-][a-zA-Z0-9.-]+)?$') { throw 'Expected a semantic version tag' }
+          $ErrorActionPreference = 'Stop'
+          $archives = @(Get-ChildItem packages/*.zip)
+          if ($archives.Count -ne 2) { throw 'Expected exactly two application packages.' }
           gh release view $env:RELEASE_TAG *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:RELEASE_TAG --draft --target $env:GITHUB_SHA --title "SuperCalc $env:RELEASE_TAG · 为了计算，先体验" --notes-file docs/release-v1.0.0.md
-            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
+            gh release create $env:RELEASE_TAG --verify-tag --draft --title "SuperCalc $env:RELEASE_TAG" --notes-file packages/RELEASE-NOTES.md
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
           }
-          gh release upload $env:RELEASE_TAG artifacts/SuperCalc-win-x64.zip artifacts/SHA256SUMS.txt --clobber
-          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
-          gh release edit $env:RELEASE_TAG --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
+          $assets = @($archives.FullName) + @('packages/SHA256SUMS.txt')
+          gh release upload $env:RELEASE_TAG @assets --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
+          gh release edit $env:RELEASE_TAG --draft=false --notes-file packages/RELEASE-NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }

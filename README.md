@@ -10,10 +10,11 @@
 
 ## 下载运行
 
-当前未提供正式 Release。可在 [Actions](https://github.com/CS-LX/SuperCalc/actions) 下载构建产物，或按下方命令生成本地运行目录，运行其中的 `SuperCalc.App.exe`。不要只把 exe 单独拖出来。
+每次推送 `main` 都会在 [Actions](https://github.com/CS-LX/SuperCalc/actions) 生成两种 ZIP；四段版本标签构建会发布到 [Releases](https://github.com/CS-LX/SuperCalc/releases)。完整解压后运行 `SuperCalc.App.exe`，不要只把 exe 单独拖出来。
 
 - Windows 11 / Windows 10 2004（19041）及以上，x64。实际验证环境为 Windows 11 x64。
-- 自包含发布，随包携带 .NET 与 Windows App SDK，不需要另外安装 .NET。
+- `self-contained` 自包含包携带 .NET 与 Windows App SDK；`lightweight` 轻量包需要已安装 x64 .NET 8 Runtime 和兼容的 Windows App Runtime 1.8。下载链接见 [包使用说明](docs/release.md)。
+- ZIP 文件名包含提交 SHA 的前 12 位，包内 `BUILD.txt` 记录完整 SHA，并附带 `SHA256SUMS.txt` 校验文件。
 - 当前版本没有代码签名或安装器。
 - 首次启动有三页向导；可以跳过，也可以在“设置”里重放。
 - 右上角 **专注** 一键关闭推荐、求值等待与退出挽留。小窗口自动收起侧栏，原生导航可从左上角菜单打开。
@@ -61,6 +62,12 @@ Windows + .NET 8 SDK（global.json 使用 8.0.4xx）。WinUI 3 / Windows App SDK
 # 生成自包含 x64 发布目录
 ./scripts/build.ps1 -Publish
 
+# 同时生成自包含 / 轻量 ZIP，文件名附加当前提交 SHA
+./scripts/build.ps1 -Package
+
+# 指定四段版本号（只打本地包，不创建标签或 Release）
+./scripts/build.ps1 -Package -Version 1.2.3.4
+
 # 单独运行核心测试
 dotnet run --project tests/SuperCalc.Tests -c Release
 
@@ -68,7 +75,9 @@ dotnet run --project tests/SuperCalc.Tests -c Release
 ./scripts/smoke.ps1
 ```
 
-测试报告见 [验证记录](docs/validation.md)。GitHub Actions 在 Windows runner 上构建并上传可下载的发布目录。
+测试报告见 [验证记录](docs/validation.md)。GitHub Actions 在 Windows runner 上测试并上传 `SuperCalc-win-x64-packages`，包含两个 ZIP 与校验文件。
+
+发布时将 `vX.X.X.X` 标签推送到 GitHub，例如 `v1.2.3.4`。工作流验证标签指向的提交属于 `main` 历史，并从该标签提交构建、写入对应程序集版本，然后将两种 ZIP 与 SHA256 校验文件发布到同名 Release。非主分支提交、非四段数字或超出程序集版本范围的标签不会发布。普通主分支推送只生成 Actions 构建产物。
 
 ```text
 src/SuperCalc.Core    有界十进制表达式解析器、历史与本地状态

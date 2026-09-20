@@ -1,9 +1,9 @@
-param([string]$OutputDirectory = '')
+param([string]$OutputDirectory = '', [string]$ApplicationPath = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (!$OutputDirectory) { $OutputDirectory = Join-Path $projectRoot 'artifacts/qa' }
 $OutputDirectory = [System.IO.Path]::GetFullPath($OutputDirectory)
-$appPath = Join-Path $projectRoot 'artifacts/SuperCalc-win-x64/SuperCalc.App.exe'
+$appPath = if ($ApplicationPath) { [IO.Path]::GetFullPath($ApplicationPath) } else { Join-Path $projectRoot 'artifacts/SuperCalc-win-x64/SuperCalc.App.exe' }
 if (!(Test-Path -LiteralPath $appPath)) { throw 'Run ./scripts/build.ps1 -Publish first.' }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 $reportPath = Join-Path $OutputDirectory 'results.json'
