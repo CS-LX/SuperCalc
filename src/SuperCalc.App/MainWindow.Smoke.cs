@@ -115,8 +115,10 @@ public sealed partial class MainWindow
             await Task.Delay(300);
             await Capture(Path.Combine(outputDirectory, "09-dark.png"));
             Check("Dark theme applies", Root.ActualTheme == ElementTheme.Dark);
+            await CapturePremiumOffer(Path.Combine(outputDirectory, "12-premium-dark.png"));
             Root.RequestedTheme = ElementTheme.Light;
             await Task.Delay(250);
+            await CapturePremiumOffer(Path.Combine(outputDirectory, "13-premium-light.png"));
             SideTabs.SelectedIndex = 1;
             Check("History is available beside the keypad", RecentItems.Children.Count > 0);
             await Capture(Path.Combine(outputDirectory, "10-side-history.png"));
@@ -127,6 +129,21 @@ public sealed partial class MainWindow
             File.WriteAllText(Path.Combine(outputDirectory, "results.json"), JsonSerializer.Serialize(new { success = false, checks, error = e.ToString() }, new JsonSerializerOptions { WriteIndented = true }));
         }
         finally { allowClose = true; CloseSafely(); }
+    }
+
+    private async Task CapturePremiumOffer(string path)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = Root.XamlRoot, RequestedTheme = Root.ActualTheme,
+            Title = "使用 SuperCalc 365 做到更多", Content = new Controls.PremiumOffer(),
+            PrimaryButtonText = "开始使用", CloseButtonText = "暂时跳过",
+            DefaultButton = ContentDialogButton.Primary
+        };
+        var pending = dialog.ShowAsync();
+        await Task.Delay(250);
+        await Capture(path, dialog);
+        dialog.Hide(); await pending;
     }
 
     private async Task Capture(string path, FrameworkElement? target = null)

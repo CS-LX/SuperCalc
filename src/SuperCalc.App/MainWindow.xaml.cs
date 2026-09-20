@@ -416,7 +416,7 @@ public sealed partial class MainWindow : Window
     private async void Premium_Click(object sender, RoutedEventArgs e)
     {
         state.Ceremonies++;
-        if (await Dialog("使用 SuperCalc 365 做到更多", "你的下一个灵感，从这里开始。\n\n预览权益  ·  ¥ 0\n✓ 个性化工作空间\n✓ CalcPilot 回答方式\n✓ 增强结果管理\n\n立即开始，让每一次计算更进一步。", "开始使用", "暂时跳过") == ContentDialogResult.Primary)
+        if (await Dialog("使用 SuperCalc 365 做到更多", new Controls.PremiumOffer(), "开始使用", "暂时跳过") == ContentDialogResult.Primary)
         { state.PremiumPretend = true; Notify("欢迎使用 SuperCalc 365", "你的预览权益已启用。", InfoBarSeverity.Success); }
         Save();
     }

@@ -1,0 +1,14 @@
+<UserControl x:Class="SuperCalc.App.Controls.PremiumOffer" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <StackPanel Spacing="20" MaxWidth="440">
+  <Border Background="{ThemeResource PromoSurfaceBrush}" BorderBrush="{ThemeResource PromoBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="20">
+   <StackPanel Spacing="12">
+    <FontIcon Glyph="&#xE734;" FontSize="32" Foreground="{ThemeResource PromoAccentBrush}" HorizontalAlignment="Left"/>
+    <TextBlock Text="SuperCalc 365" FontSize="26" FontWeight="SemiBold"/>
+    <TextBlock Text="你的下一个灵感，从这里开始。" TextWrapping="Wrap"/>
+    <StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="¥ 0" FontSize="24" FontWeight="SemiBold" Foreground="{ThemeResource PromoTextBrush}"/><TextBlock Text="预览权益" VerticalAlignment="Center" Style="{StaticResource SmallLabel}"/></StackPanel>
+   </StackPanel>
+  </Border>
+  <StackPanel Spacing="12"><TextBlock Text="✓  个性化工作空间"/><TextBlock Text="✓  CalcPilot 回答方式"/><TextBlock Text="✓  增强结果管理"/></StackPanel>
+  <TextBlock Text="立即开始，让每一次计算更进一步。" TextWrapping="Wrap" Style="{StaticResource SmallLabel}"/>
+ </StackPanel>
+</UserControl>

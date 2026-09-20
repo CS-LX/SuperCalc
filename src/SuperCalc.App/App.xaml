@@ -2,6 +2,27 @@
  <Application.Resources>
   <ResourceDictionary>
    <ResourceDictionary.MergedDictionaries><XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/></ResourceDictionary.MergedDictionaries>
+   <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+     <Color x:Key="PromoTintBlue">#EEF5FF</Color><Color x:Key="PromoTintPurple">#F3EDFC</Color><Color x:Key="PromoTintPink">#FBEFF6</Color>
+     <Color x:Key="PromoEdgeBlue">#AEC6EE</Color><Color x:Key="PromoEdgePurple">#C6AFE8</Color><Color x:Key="PromoEdgePink">#E8BDD5</Color>
+     <Color x:Key="PromoAccentBlue">#3266BE</Color><Color x:Key="PromoAccentPurple">#7944AF</Color><Color x:Key="PromoAccentPink">#AF4281</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Default">
+     <Color x:Key="PromoTintBlue">#232C40</Color><Color x:Key="PromoTintPurple">#32283E</Color><Color x:Key="PromoTintPink">#3B2936</Color>
+     <Color x:Key="PromoEdgeBlue">#526890</Color><Color x:Key="PromoEdgePurple">#796092</Color><Color x:Key="PromoEdgePink">#936582</Color>
+     <Color x:Key="PromoAccentBlue">#80B1FF</Color><Color x:Key="PromoAccentPurple">#BE97F5</Color><Color x:Key="PromoAccentPink">#EF9CCB</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="HighContrast">
+     <StaticResource x:Key="PromoTintBlue" ResourceKey="SystemColorWindowColor"/><StaticResource x:Key="PromoTintPurple" ResourceKey="SystemColorWindowColor"/><StaticResource x:Key="PromoTintPink" ResourceKey="SystemColorWindowColor"/>
+     <StaticResource x:Key="PromoEdgeBlue" ResourceKey="SystemColorWindowTextColor"/><StaticResource x:Key="PromoEdgePurple" ResourceKey="SystemColorWindowTextColor"/><StaticResource x:Key="PromoEdgePink" ResourceKey="SystemColorWindowTextColor"/>
+     <StaticResource x:Key="PromoAccentBlue" ResourceKey="SystemColorWindowTextColor"/><StaticResource x:Key="PromoAccentPurple" ResourceKey="SystemColorWindowTextColor"/><StaticResource x:Key="PromoAccentPink" ResourceKey="SystemColorWindowTextColor"/>
+    </ResourceDictionary>
+   </ResourceDictionary.ThemeDictionaries>
+   <LinearGradientBrush x:Key="PromoSurfaceBrush" StartPoint="0,0" EndPoint="1,1"><GradientStop Color="{ThemeResource PromoTintBlue}" Offset="0"/><GradientStop Color="{ThemeResource PromoTintPurple}" Offset="0.5"/><GradientStop Color="{ThemeResource PromoTintPink}" Offset="1"/></LinearGradientBrush>
+   <LinearGradientBrush x:Key="PromoBorderBrush" StartPoint="0,0" EndPoint="1,1"><GradientStop Color="{ThemeResource PromoEdgeBlue}" Offset="0"/><GradientStop Color="{ThemeResource PromoEdgePurple}" Offset="0.5"/><GradientStop Color="{ThemeResource PromoEdgePink}" Offset="1"/></LinearGradientBrush>
+   <LinearGradientBrush x:Key="PromoAccentBrush" StartPoint="0,0" EndPoint="1,1"><GradientStop Color="{ThemeResource PromoAccentBlue}" Offset="0"/><GradientStop Color="{ThemeResource PromoAccentPurple}" Offset="0.5"/><GradientStop Color="{ThemeResource PromoAccentPink}" Offset="1"/></LinearGradientBrush>
+   <SolidColorBrush x:Key="PromoTextBrush" Color="{ThemeResource PromoAccentPurple}"/>
    <SolidColorBrush x:Key="MutedBrush" Color="#808080"/>
    <Style x:Key="Card" TargetType="Border">
     <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/><Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>

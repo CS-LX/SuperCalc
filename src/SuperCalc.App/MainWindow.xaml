@@ -14,7 +14,7 @@
     <NavigationViewItem x:Name="HistoryNav" Content="历史记录" Tag="history"><NavigationViewItem.Icon><FontIcon Glyph="&#xE81C;"/></NavigationViewItem.Icon></NavigationViewItem>
     <NavigationViewItemSeparator/>
     <NavigationViewItem Content="OneNumber" Tag="cloud"><NavigationViewItem.Icon><FontIcon Glyph="&#xE753;"/></NavigationViewItem.Icon></NavigationViewItem>
-    <NavigationViewItem Content="SuperCalc 365" Tag="premium"><NavigationViewItem.Icon><FontIcon Glyph="&#xE734;"/></NavigationViewItem.Icon></NavigationViewItem>
+    <NavigationViewItem Content="SuperCalc 365" Tag="premium"><NavigationViewItem.Icon><FontIcon Glyph="&#xE734;" Foreground="{ThemeResource PromoAccentBrush}"/></NavigationViewItem.Icon></NavigationViewItem>
     <NavigationViewItem x:Name="MuseumNav" Content="新增功能" Tag="museum"><NavigationViewItem.Icon><FontIcon Glyph="&#xE946;"/></NavigationViewItem.Icon></NavigationViewItem>
    </NavigationView.MenuItems>
    <NavigationView.FooterMenuItems>
@@ -28,7 +28,7 @@
      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
       <ToggleSwitch x:Name="FocusToggle" OffContent="专注" OnContent="专注" MinWidth="108" Toggled="Focus_Toggled" AutomationProperties.Name="专注模式"/>
       <Button Click="Copy_Click" Style="{StaticResource MemoryKey}" ToolTipService.ToolTip="复制结果" AutomationProperties.Name="复制结果"><FontIcon Glyph="&#xE8C8;" FontSize="16"/></Button>
-      <Button Click="Panel_Click" Style="{StaticResource MemoryKey}" ToolTipService.ToolTip="CalcPilot" AutomationProperties.Name="打开 CalcPilot"><FontIcon Glyph="&#xE945;" FontSize="16"/></Button>
+      <Button Click="Panel_Click" Style="{StaticResource MemoryKey}" ToolTipService.ToolTip="CalcPilot" AutomationProperties.Name="打开 CalcPilot"><FontIcon Glyph="&#xE945;" FontSize="16" Foreground="{ThemeResource PromoAccentBrush}"/></Button>
       <Button Content="&#xE712;" FontFamily="Segoe Fluent Icons" Click="More_Click" Style="{StaticResource MemoryKey}" AutomationProperties.Name="更多选项" ToolTipService.ToolTip="更多选项"/>
      </StackPanel>
     </Grid>
@@ -68,10 +68,10 @@
           <Button Grid.Row="5" Content="+/−" Style="{StaticResource Key}" Click="Unary_Click" Tag="negate"/><Button Grid.Row="5" Grid.Column="1" Content="0" Style="{StaticResource Key}" Click="Key_Click" Tag="0"/><Button Grid.Row="5" Grid.Column="2" Content="." Style="{StaticResource Key}" Click="Key_Click" Tag="."/><Button x:Name="EqualsButton" Grid.Row="5" Grid.Column="3" Content="=" Style="{StaticResource Key}" Background="{ThemeResource AccentFillColorDefaultBrush}" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" Click="Equals_Click" AutomationProperties.Name="计算结果"/>
          </Grid>
       </Grid>
-      <Border x:Name="RecommendationCard" Grid.Row="2" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0" Padding="10,8,4,0" Margin="0,8,0,0">
+      <Border x:Name="RecommendationCard" Grid.Row="2" Background="{ThemeResource PromoSurfaceBrush}" BorderBrush="{ThemeResource PromoBorderBrush}" BorderThickness="0,1,0,0" Padding="10,8,8,8" Margin="0,8,0,0" CornerRadius="4">
        <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Spacing="2"><TextBlock Text="推荐" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/><TextBlock x:Name="RecommendationText" Text="使用 SuperCalc 365，发现更多计算可能。" TextTrimming="CharacterEllipsis" FontSize="12"/></StackPanel>
-        <Button Grid.Column="1" Content="了解更多" Click="Premium_Click" FontSize="12" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="了解更多" Click="Premium_Click" FontSize="12" VerticalAlignment="Center" Foreground="{ThemeResource PromoTextBrush}"/>
        </Grid>
       </Border>
      </Grid>
@@ -82,12 +82,12 @@
          <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
          <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="18" Padding="4,12,4,12">
-           <StackPanel Orientation="Horizontal" Spacing="10"><FontIcon Glyph="&#xE945;" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" FontSize="24"/><StackPanel><TextBlock Text="CalcPilot" FontWeight="SemiBold"/><TextBlock Text="你的日常计算助手" Style="{StaticResource SmallLabel}" TextWrapping="Wrap"/></StackPanel></StackPanel>
+           <StackPanel Orientation="Horizontal" Spacing="10"><Border Width="40" Height="40" CornerRadius="10" Background="{ThemeResource PromoSurfaceBrush}" BorderBrush="{ThemeResource PromoBorderBrush}" BorderThickness="1"><FontIcon Glyph="&#xE945;" Foreground="{ThemeResource PromoAccentBrush}" FontSize="24"/></Border><StackPanel VerticalAlignment="Center"><TextBlock Text="CalcPilot" FontWeight="SemiBold"/><TextBlock Text="你的日常计算助手" Style="{StaticResource SmallLabel}" TextWrapping="Wrap"/></StackPanel></StackPanel>
            <TextBlock Text="我可以帮助你做什么？" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
            <Button Content="解释当前结果" Click="Pilot_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
            <Button Content="为我推荐一个算式" Click="Recommendation_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-           <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8" Padding="14">
-            <StackPanel Spacing="10"><TextBlock x:Name="PilotReply" Text="选择一个建议，或计算一个结果以开始。" TextWrapping="Wrap" FontSize="13" LineHeight="21"/><ProgressBar x:Name="ThinkingBar" IsIndeterminate="True" Visibility="Collapsed"/></StackPanel>
+           <Border Background="{ThemeResource PromoSurfaceBrush}" BorderBrush="{ThemeResource PromoBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+            <StackPanel Spacing="10"><TextBlock x:Name="PilotReply" Text="选择一个建议，或计算一个结果以开始。" TextWrapping="Wrap" FontSize="13" LineHeight="21"/><ProgressBar x:Name="ThinkingBar" Foreground="{ThemeResource PromoAccentBrush}" IsIndeterminate="True" Visibility="Collapsed"/></StackPanel>
            </Border>
            <Expander Header="个性化" IsExpanded="False" HorizontalAlignment="Stretch"><ComboBox x:Name="ToneBox" Header="回答方式" SelectedIndex="0" HorizontalAlignment="Stretch"><ComboBoxItem Content="专业"/><ComboBoxItem Content="鼓舞人心"/><ComboBoxItem Content="商务"/></ComboBox></Expander>
            <Grid><TextBlock Text="体验健康度" FontSize="12"/><TextBlock x:Name="HealthScore" Text="42 / 100" HorizontalAlignment="Right" FontSize="12"/></Grid>
@@ -96,7 +96,7 @@
            <HyperlinkButton Content="查看建议" Click="Optimize_Click" Padding="0"/>
           </StackPanel>
          </ScrollViewer>
-         <Button Grid.Row="1" Content="询问 CalcPilot" Click="Pilot_Click" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" Margin="4,10,4,0"/>
+         <Border Grid.Row="1" Background="{ThemeResource PromoBorderBrush}" Padding="1" CornerRadius="5" Margin="4,10,4,0"><Button Content="询问 CalcPilot" Click="Pilot_Click" Background="{ThemeResource PromoSurfaceBrush}" Foreground="{ThemeResource PromoTextBrush}" FontWeight="SemiBold" HorizontalAlignment="Stretch"/></Border>
         </Grid>
        </PivotItem>
        <PivotItem Header="历史记录">

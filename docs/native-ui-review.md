@@ -33,6 +33,14 @@
 
 ## 修改后
 
+### AI 与权益入口的颜色引导
+
+参考 [Microsoft Design：Behind the design — Meet Copilot](https://microsoft.design/articles/behind-the-design-meet-copilot/) 中关于品牌色和鲜明点缀用于区分 AI 交互的说明，为 CalcPilot 图标、回答区域、提问按钮，以及 365 推荐栏和权益弹窗加入低饱和蓝—紫—粉渐变。使用原生 XAML 渐变画刷、细描边和主题资源，保持计算键盘的系统配色。浅色和深色分别配置底色；高对比度资源回退为系统窗口与文字颜色（未切换系统高对比度模式做实机验证）。
+
+已重新构建并通过 27 项应用集成检查，复核两种主题的主界面与权益弹窗截图。
+
+[浅色权益弹窗](images/premium-light.png) · [深色权益弹窗](images/premium-dark.png)
+
 ![修改后](images/calculator.png)
 
 ![小窗口](images/compact.png)
