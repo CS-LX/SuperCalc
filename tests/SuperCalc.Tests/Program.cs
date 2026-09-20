@@ -52,12 +52,13 @@ try
     });
     Test("persistence roundtrip", () =>
     {
-        var state = new AppState { FocusMode = true, Memory = 12.5m, Onboarded = true };
+        var state = new AppState { FocusMode = true, Memory = 12.5m, Onboarded = true, ResultExperienceChosen = true, OpenResultsWithAssistant = false };
         state.Record("2+2", 4);
         var store = new StateStore(path);
         Equal(true, store.Save(state));
         var loaded = store.Load();
         Equal(true, loaded.FocusMode); Equal(12.5m, loaded.Memory); Equal("4", loaded.History[0].Result);
+        Equal(true, loaded.ResultExperienceChosen); Equal(false, loaded.OpenResultsWithAssistant);
     });
     Test("invalid JSON recovers", () =>
     {

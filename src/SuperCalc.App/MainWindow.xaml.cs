@@ -89,6 +89,7 @@ public sealed partial class MainWindow : Window
     private void ApplyMode()
     {
         if (!ready || isClosed) return;
+        if (suggestionNotice && (!Drama || !state.Recommendations)) { Notice.IsOpen = false; Notice.ActionButton = null; suggestionNotice = false; }
         Navigation.IsPaneVisible = !state.FocusMode;
         var showAssistant = Satire && assistantRequested && Root.ActualWidth >= 720;
         AssistantPanel.Visibility = showAssistant ? Visibility.Visible : Visibility.Collapsed;
@@ -206,18 +207,8 @@ public sealed partial class MainWindow : Window
         try
         {
             var value = Calculator.Evaluate(expression);
-            if (Drama && state.Animations)
-            {
-                state.Ceremonies++;
-                ThinkingBar.Visibility = Visibility.Visible;
-                foreach (var message in new[] { "正在准备你的工作空间…", "正在优化结果显示…", "正在检查兼容性…" })
-                {
-                    if (state.FocusMode) break;
-                    StatusText.Text = message;
-                    await Task.Delay(220);
-                    if (isClosed) return;
-                }
-            }
+            if (!await PrepareCalculation(expression)) { if (!isClosed) ResultCaption.Text = "本次计算已取消"; return; }
+            if (isClosed) return;
             lastResult = value;
             hasResult = true;
             ResultText.Text = Calculator.Format(value);
@@ -229,8 +220,9 @@ public sealed partial class MainWindow : Window
             {
                 PilotReply.Text = $"结果为 {Calculator.Format(value)}。需要我为你提供进一步的分析或建议吗？";
                 RecommendationText.Text = $"喜欢 {Calculator.Format(value)}？你可能也会喜欢 SuperCalc 365。";
-                if (Drama && state.Calculations % 3 == 0)
-                    Notify("帮助我们变得更好", "你对这次计算体验满意吗？前往 CalcPilot 查看个性化建议。");
+                OfferNextStep();
+                if (Drama && state.ResultExperienceChosen && state.OpenResultsWithAssistant)
+                { assistantRequested = true; SideTabs.SelectedIndex = 0; PilotReply.Text = $"当前结果为 {Calculator.Format(value)}。你可以继续计算，或选择下方操作获取更多建议。"; }
             }
             Save();
         }
@@ -370,40 +362,8 @@ public sealed partial class MainWindow : Window
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException) { Notify("剪贴板暂不可用", "请稍后再试。", InfoBarSeverity.Warning); }
     }
 
-    private async Task<ContentDialogResult> Dialog(string title, object content, string primary, string close = "关闭", string? secondary = null)
-    {
-        if (dialogOpen) return ContentDialogResult.None;
-        dialogOpen = true;
-        try
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = Root.XamlRoot, RequestedTheme = Root.ActualTheme, Title = title,
-                Content = content is string text ? new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, LineHeight = 24, MaxWidth = 440 } : content,
-                PrimaryButtonText = primary, CloseButtonText = close, SecondaryButtonText = secondary ?? "",
-                DefaultButton = ContentDialogButton.Primary
-            };
-            return await dialog.ShowAsync();
-        }
-        finally { dialogOpen = false; }
-    }
-
-    private async Task Onboard()
-    {
-        if (dialogOpen) return;
-        var steps = new[]
-        {
-            ("让我们完成设备设置", "1 / 3   充分利用 SuperCalc\n\n只需再完成几个步骤，即可让你的计算体验更加个性化。\n\n你的工作空间已准备就绪。让我们继续设置适合你的服务。"),
-            ("将你的数字集中在一处", "2 / 3   为你而设的工作空间\n\n使用个人资料管理偏好、访问最近的计算，并在 OneNumber 中整理你的结果。\n\n你可以稍后在设置中管理个人资料。"),
-            ("使用推荐设置", "3 / 3   获取为你量身定制的体验\n\n✓ 个性化建议与优惠\n✓ CalcPilot 智能工作流\n✓ 体验健康度与反馈\n\n你可以随时在设置中调整这些选项。")
-        };
-        foreach (var (title, body) in steps)
-        {
-            state.Ceremonies++;
-            if (await Dialog(title, body, "接受并继续", "跳过，直接计算") != ContentDialogResult.Primary) break;
-        }
-        state.Onboarded = true; Save();
-    }
+    private Task<ContentDialogResult> Dialog(string title, object content, string primary, string close = "关闭", string? secondary = null)
+        => ShowExperienceDialog(CreateExperienceDialog(title, content, primary, close, secondary));
     private async void Onboarding_Click(object sender, RoutedEventArgs e) => await Onboard();
 
     private async void Account_Click(object sender, RoutedEventArgs e)
@@ -541,7 +501,7 @@ public sealed partial class MainWindow : Window
     }
 
     private void Notify(string title, string message, InfoBarSeverity severity = InfoBarSeverity.Informational)
-    { if (isClosed) return; Notice.Title = title; Notice.Message = message; Notice.Severity = severity; Notice.IsOpen = true; AnimateEntrance(Notice); }
+    { if (isClosed) return; suggestionNotice = false; Notice.ActionButton = null; Notice.Title = title; Notice.Message = message; Notice.Severity = severity; Notice.IsOpen = true; AnimateEntrance(Notice); }
 
     private void CloseSafely()
     {

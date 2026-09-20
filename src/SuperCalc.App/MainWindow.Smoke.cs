@@ -5,6 +5,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
@@ -78,18 +80,66 @@ public sealed partial class MainWindow
             await Capture(Path.Combine(outputDirectory, "05-museum.png"));
             Navigate("calc");
             ExpressionBox.Text = "(128 + 256) × 2"; await Calculate();
-            // Test real ContentDialog layout and dismissal without interacting with the user's desktop.
-            var probe = new ContentDialog
-            {
-                XamlRoot = Root.XamlRoot, Title = "让我们完成计算器的设置",
-                Content = new TextBlock { Text = "1 / 3  充分利用 SuperCalc\n\n只需再完成几个步骤，即可让你的计算体验更加个性化。\n\n你的工作空间已准备就绪。让我们继续设置适合你的服务。", TextWrapping = TextWrapping.Wrap, MaxWidth = 440 },
-                PrimaryButtonText = "接受并继续", CloseButtonText = "跳过，直接计算"
-            };
-            var pending = probe.ShowAsync();
+            // Exercise the real wizard and its native button handlers, using an isolated app state.
+            var pending = Onboard();
             await Task.Delay(250);
+            var probe = activeDialog!;
+            var wizard = (Controls.SetupWizard)probe.Content;
             Check("ContentDialog opens", probe.IsLoaded);
             await Capture(Path.Combine(outputDirectory, "06-onboarding.png"), probe);
-            probe.Hide(); await pending;
+            InvokeDialogButton(probe, "PrimaryButton"); await Task.Delay(250);
+            Check("Wizard advances without replacing the dialog", wizard.Step == 1 && activeDialog == probe);
+            await Capture(Path.Combine(outputDirectory, "14-onboarding-profile.png"), probe);
+            InvokeDialogButton(probe, "SecondaryButton"); await Task.Delay(250);
+            Check("Wizard back button returns to welcome", wizard.Step == 0);
+            InvokeDialogButton(probe, "PrimaryButton"); await Task.Delay(250);
+            InvokeDialogButton(probe, "PrimaryButton"); await Task.Delay(250);
+            Check("Wizard final step changes the primary action", wizard.Step == 2 && probe.PrimaryButtonText == "接受并完成");
+            await Capture(Path.Combine(outputDirectory, "15-onboarding-preferences.png"), probe);
+            FindVisual<CheckBox>(probe, "RecommendedOffers")!.IsChecked = false;
+            InvokeDialogButton(probe, "PrimaryButton"); await pending;
+            Check("Wizard completion applies the selected profile", state.Onboarded && state.LocalPersona);
+            Check("Wizard applies unchecked preferences to settings", !state.Recommendations && !RecommendationsToggle.IsOn);
+            RecommendationsToggle.IsOn = true;
+            if (MotionEnabled)
+            {
+                var previousCount = state.Calculations;
+                ExpressionBox.Text = "123 + 456";
+                var preparing = Calculate();
+                await Task.Delay(150);
+                Check("Calculation opens preparation dialog", activeDialog?.Content is Controls.CalculationPreparation);
+                InvokeDialogButton(activeDialog!, "CloseButton"); await preparing;
+                Check("Cancel leaves calculation history unchanged", state.Calculations == previousCount && !busy && !dialogOpen);
+                ExpressionBox.Text = "123 + 456";
+                preparing = Calculate();
+                await Task.Delay(150);
+                InvokeDialogButton(activeDialog!, "PrimaryButton"); await preparing;
+                Check("Direct result bypass completes calculation", ResultText.Text == "579" && state.Calculations == previousCount + 1);
+                ExpressionBox.Text = "1 + 1";
+                preparing = Calculate();
+                await Task.Delay(850);
+                Check("Preparation reaches final progress stage", activeDialog?.Content is Controls.CalculationPreparation { Stage: 3 });
+                await Capture(Path.Combine(outputDirectory, "16-preparing-result.png"), activeDialog!);
+                await preparing;
+                Check("Preparation automatically completes", ResultText.Text == "2" && !busy && !dialogOpen);
+                previousCount = state.Calculations;
+                ExpressionBox.Text = "88 + 1";
+                preparing = Calculate(); await Task.Delay(1250);
+                InvokeDialogButton(activeDialog!, "CloseButton"); await preparing;
+                Check("Cancellation during final progress does not save a result", state.Calculations == previousCount);
+            }
+            var resultChoice = CreateResultChoice();
+            var choiceDialog = CreateExperienceDialog("你希望如何打开此结果？", resultChoice.Content, "确定", "取消");
+            var choosing = ShowExperienceDialog(choiceDialog);
+            await Task.Delay(250);
+            await Capture(Path.Combine(outputDirectory, "17-result-choice.png"), choiceDialog);
+            choiceDialog.Hide(); await choosing;
+            var choosingDefault = ChooseResultExperience();
+            await Task.Delay(250);
+            FindVisual<RadioButton>(activeDialog!, "StandardResultOption")!.IsChecked = true;
+            InvokeDialogButton(activeDialog!, "PrimaryButton"); await choosingDefault;
+            Check("Default result app is applied and saved", state.ResultExperienceChosen && !state.OpenResultsWithAssistant && !store.Load().OpenResultsWithAssistant);
+            assistantRequested = true; ApplyMode();
             Save();
             var reloaded = store.Load();
             Check("UI preferences and history persist", reloaded.Onboarded && reloaded.History.Count > 0);
@@ -110,11 +160,23 @@ public sealed partial class MainWindow
             Navigate("settings");
             await Capture(Path.Combine(outputDirectory, "11-compact-settings.png"));
             Navigate("calc");
+            var compactWizard = new Controls.SetupWizard(state); compactWizard.SetStep(2);
+            var compactDialog = CreateSetupDialog(compactWizard);
+            var compactPending = ShowExperienceDialog(compactDialog);
+            await Task.Delay(250);
+            await Capture(Path.Combine(outputDirectory, "18-compact-wizard.png"), compactDialog);
+            Check("Compact wizard has a reachable close action", FindVisual<Button>(compactDialog, "CloseButton") is { ActualHeight: > 0 });
+            compactDialog.Hide(); await compactPending;
             AppWindow.Resize(originalSize);
             Root.RequestedTheme = ElementTheme.Dark;
             await Task.Delay(300);
             await Capture(Path.Combine(outputDirectory, "09-dark.png"));
             Check("Dark theme applies", Root.ActualTheme == ElementTheme.Dark);
+            var darkWizard = CreateSetupDialog(new Controls.SetupWizard(state));
+            var darkPending = ShowExperienceDialog(darkWizard);
+            await Task.Delay(250);
+            await Capture(Path.Combine(outputDirectory, "19-dark-wizard.png"), darkWizard);
+            darkWizard.Hide(); await darkPending;
             await CapturePremiumOffer(Path.Combine(outputDirectory, "12-premium-dark.png"));
             Root.RequestedTheme = ElementTheme.Light;
             await Task.Delay(250);
@@ -146,10 +208,26 @@ public sealed partial class MainWindow
         dialog.Hide(); await pending;
     }
 
+    private static T? FindVisual<T>(DependencyObject parent, string name) where T : FrameworkElement
+    {
+        if (parent is T element && element.Name == name) return element;
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            if (FindVisual<T>(VisualTreeHelper.GetChild(parent, i), name) is { } found) return found;
+        return null;
+    }
+
+    private static void InvokeDialogButton(ContentDialog dialog, string name)
+    {
+        var button = FindVisual<Button>(dialog, name) ?? throw new InvalidOperationException("Missing dialog button: " + name);
+        ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)).Invoke();
+    }
+
     private async Task Capture(string path, FrameworkElement? target = null)
     {
         Root.UpdateLayout();
         await Task.Delay(250);
+        // Render the actual dialog surface, excluding the Popup's window-sized transparent layer.
+        if (target is ContentDialog dialog) target = FindVisual<Border>(dialog, "BackgroundElement") ?? target;
         var bitmap = new RenderTargetBitmap();
         // Mica lives outside the XAML tree. Use its solid fallback while capturing XAML, then restore.
         var background = Root.Background;

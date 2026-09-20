@@ -10,7 +10,7 @@ $reportPath = Join-Path $OutputDirectory 'results.json'
 if (Test-Path -LiteralPath $reportPath) { Remove-Item -LiteralPath $reportPath }
 # This is an explicitly requested interactive test window, not a background helper.
 $testProcess = Start-Process -FilePath $appPath -ArgumentList ('--smoke-test "' + $OutputDirectory + '"') -PassThru
-if (!$testProcess.WaitForExit(45000)) { throw 'Smoke test timed out; inspect the test window.' }
+if (!$testProcess.WaitForExit(90000)) { throw 'Smoke test timed out; inspect the test window.' }
 if ($testProcess.ExitCode -ne 0) { throw "Smoke process failed with exit code $($testProcess.ExitCode)." }
 if (!(Test-Path -LiteralPath $reportPath)) { throw 'App exited without a smoke-test report.' }
 $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json

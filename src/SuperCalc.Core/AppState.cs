@@ -14,6 +14,8 @@ public sealed class AppState
     public bool ExitSurvey { get; set; } = true;
     public bool LocalPersona { get; set; }
     public bool PremiumPretend { get; set; }
+    public bool ResultExperienceChosen { get; set; }
+    public bool OpenResultsWithAssistant { get; set; } = true;
     public int Calculations { get; set; }
     public int Ceremonies { get; set; }
     public decimal Memory { get; set; }

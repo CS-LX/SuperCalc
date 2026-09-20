@@ -122,7 +122,7 @@
       <Border Style="{StaticResource Card}"><Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="建议与优惠"/><TextBlock Text="根据使用情况提供个性化推荐" Style="{StaticResource SmallLabel}" TextWrapping="Wrap"/></StackPanel><ToggleSwitch Grid.Column="1" x:Name="RecommendationsToggle" HorizontalAlignment="Right" OnContent="开" OffContent="关" Toggled="Settings_Toggled" AutomationProperties.Name="建议与优惠"/></Grid></Border>
       <Border Style="{StaticResource Card}"><Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="帮助改进 SuperCalc"/><TextBlock Text="离开时提供反馈建议" Style="{StaticResource SmallLabel}" TextWrapping="Wrap"/></StackPanel><ToggleSwitch Grid.Column="1" x:Name="ExitToggle" HorizontalAlignment="Right" OnContent="开" OffContent="关" Toggled="Settings_Toggled" AutomationProperties.Name="离开时提供反馈"/></Grid></Border>
       <TextBlock Text="相关设置" FontWeight="SemiBold" Margin="0,16,0,4"/>
-      <Expander Header="高级计算设置" HorizontalAlignment="Stretch"><Button Content="其他数字属性" Click="Legacy_Click"/></Expander>
+      <Expander Header="高级计算设置" HorizontalAlignment="Stretch"><StackPanel Spacing="10"><Button Content="结果的默认打开方式" Click="ChooseResult_Click"/><Button Content="其他数字属性" Click="Legacy_Click"/></StackPanel></Expander>
       <Expander Header="应用更新" HorizontalAlignment="Stretch"><StackPanel Spacing="10"><TextBlock Text="SuperCalc  1.1.0"/><Button Content="检查更新" Click="Update_Click"/></StackPanel></Expander>
       <Button Content="完成设备设置" Click="Onboarding_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
      </StackPanel>
